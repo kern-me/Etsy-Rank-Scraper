@@ -4,6 +4,7 @@ property selectorPathScores : "btn btn-lg text-white"
 property selectorPathStats : "amount"
 property searchButtonPath : "btn btn-flat btn-warning"
 
+property defaultKeyDelay : 0.2
 property defaultDelayValue : 0.75
 property browserTimeoutValue : 60
 property repeatCount : 19
