@@ -7,7 +7,6 @@ property searchButtonPath : "btn btn-flat btn-warning"
 property defaultKeyDelay : 0.2
 property defaultDelayValue : 0.75
 property browserTimeoutValue : 60
-property repeatCount : 19
 
 -- ========================================
 -- Copy the first cell of the spreadsheet
@@ -146,21 +145,40 @@ end checkKeyword
 -- =======================================
 
 on getData()
+	progressDialog("Gathering the Data! (Competition Score) Step: 5/5 ")
 	set competition to getInputByClass(selectorPathScores, 0)
+	
+	progressDialog("Gathering the Data! (Demand Score) Step: 5/5 ")
 	set demand to getInputByClass(selectorPathScores, 1)
+	
+	progressDialog("Gathering the Data! (Engagement Score) Step: 5/5 ")
 	set engagement to getInputByClass(selectorPathScores, 2)
 	
+	progressDialog("Gathering the Data! (Listings) Step: 5/5 ")
 	set listings to getInputByClass(selectorPathStats, 0)
+	
+	progressDialog("Gathering the Data! (Average Price) Step: 5/5 ")
 	set avgPrice to getInputByClass(selectorPathStats, 2)
+	
+	progressDialog("Gathering the Data! (Average Hearts) Step: 5/5 ")
 	set avgHearts to getInputByClass(selectorPathStats, 3)
+	
+	progressDialog("Gathering the Data! (Total Views) Step: 5/5 ")
 	set totalViews to getInputByClass(selectorPathStats, 4)
+	
+	progressDialog("Gathering the Data! (Average Views) Step: 5/5 ")
 	set avgViews to getInputByClass(selectorPathStats, 5)
+	
+	progressDialog("Gathering the Data! (Average Daily Views) Step: 5/5 ")
 	set avgDailyViews to getInputByClass(selectorPathStats, 6)
+	
+	progressDialog("Gathering the Data! (Average Weekly Views) Step: 5/5 ")
 	set avgWeeklyViews to getInputByClass(selectorPathStats, 7)
 	
 	tell application "Google Chrome" to activate
 	-- Set clipboard to each variable and paste them into the spreadsheet
 	
+	progressDialog("Pasting the values into Google Sheets! Step: 5/5 ")
 	script finalizeData
 		on recordTheData(theData)
 			delay defaultDelayValue
@@ -168,6 +186,7 @@ on getData()
 			delay defaultDelayValue
 			pasteValues()
 		end recordTheData
+		
 		
 		recordTheData(competition)
 		recordTheData(demand)
@@ -183,6 +202,7 @@ on getData()
 	
 	run script finalizeData
 	delay defaultDelayValue
+	progressDialog("Done! On to the next keyword. Step: 5/5 ")
 	nextRow()
 	delay defaultDelayValue
 end getData
@@ -190,31 +210,44 @@ end getData
 -- =======================================
 -- Primary Sequence Handler
 -- =======================================
+on progressDialog(theMessage)
+	set progress description to theMessage
+end progressDialog
+
+
 on grabDataFromList()
-	repeat repeatCount times
+	set repeatCount to display dialog "How many keywords do you need?" default answer ""
+	set countValue to text returned of repeatCount as number
+	repeat countValue times
 		log "Step 1/5"
+		progressDialog("Copying the first keyword. Step 1/5")
 		tell application "Google Chrome" to activate
 		copyData()
 		log "Step 2/5"
 		tell application "Safari" to activate
+		progressDialog("Pasting the Keyword into the search. Step 2/5")
 		setSearchField()
+		progressDialog("Executing the search. Step 3/5")
 		clickSearchButton()
 		log "Step 3/5"
+		progressDialog("Checking to make sure the page is loaded completely. Step 4/5")
 		checkIfLoaded()
 		log "Step 4/5"
+		progressDialog("Checking to make sure the keyword is found on Etsy. Step 5/5")
 		if checkKeyword() is "no results" then
 			log "No results were found. going back to step 1..."
+			progressDialog("No results for that keyword! Going to the next row.")
 			tell application "Google Chrome" to activate
 			set the clipboard to "No Results Found"
 			pasteValues()
 			nextRow()
 		else
 			log "Step 5/5"
+			progressDialog("Gathering the Data! 5/5 ")
 			getData()
 		end if
 	end repeat
 end grabDataFromList
-
 
 -- =======================================
 -- Handler Calls
