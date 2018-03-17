@@ -8,51 +8,28 @@ property defaultKeyDelay : 0.2
 property defaultDelayValue : 0.75
 property browserTimeoutValue : 60
 
--- ========================================
--- Copy the first cell of the spreadsheet
--- ========================================
-on copyData() -- Copy the first cell of data
-	tell application "System Events"
-		delay defaultDelayValue
-		log "Copy the first cell."
-		keystroke "c" using command down
-		delay defaultDelayValue
-		log "Arrow to the right."
-		key code 124 -- Arrow Right
-		delay defaultDelayValue
-		log "First cell of Google Sheets is Copied!"
-	end tell
-end copyData
+property keyRight : 124
+property keyDown : 125
+property keyHome : 115
 
 -- ========================================
--- Paste the clipboard and right arrow
+-- Key Stroke Handlers
 -- ========================================
-on pasteValues()
+on clipBoardActions(theKeystroke)
 	tell application "System Events"
-		delay defaultDelayValue
-		log "Pasting the clipboard"
-		keystroke "v" using command down
-		delay defaultDelayValue
-		log "Arrow right"
-		key code 124 -- Arrow Right
-		delay defaultDelayValue
+		delay defaultKeyDelay
+		keystroke theKeystroke using command down
+		delay defaultKeyDelay
 	end tell
-end pasteValues
+end clipBoardActions
 
--- =======================================
--- Make a new row in Google Sheets
--- =======================================
-on nextRow()
+on movementAction(theKeystroke)
 	tell application "System Events"
-		delay defaultDelayValue
-		key code 125 -- Arrow Down
-		log "Arrow Down"
-		delay defaultDelayValue
-		key code 115 -- Back to the First Cell
-		log "Home Key to go back to the first cell of next row"
-		delay defaultDelayValue
+		delay defaultKeyDelay
+		key code theKeystroke
+		delay defaultKeyDelay
 	end tell
-end nextRow
+end movementAction
 
 -- ========================================
 -- Find the Etsy Rank search bar in the DOM
@@ -74,7 +51,6 @@ on setSearchField()
 		delay 1
 		log "Found the node."
 		log theNode
-		
 	end tell
 end setSearchField
 
@@ -179,14 +155,15 @@ on getData()
 	-- Set clipboard to each variable and paste them into the spreadsheet
 	
 	progressDialog("Pasting the values into Google Sheets! Step: 5/5 ")
+	
 	script finalizeData
 		on recordTheData(theData)
 			delay defaultDelayValue
 			set the clipboard to theData
 			delay defaultDelayValue
-			pasteValues()
+			clipBoardActions("v")
+			movementAction(keyRight)
 		end recordTheData
-		
 		
 		recordTheData(competition)
 		recordTheData(demand)
@@ -203,7 +180,8 @@ on getData()
 	run script finalizeData
 	delay defaultDelayValue
 	progressDialog("Done! On to the next keyword. Step: 5/5 ")
-	nextRow()
+	movementAction(keyDown)
+	movementAction(keyHome)
 	delay defaultDelayValue
 end getData
 
@@ -215,42 +193,38 @@ on progressDialog(theMessage)
 end progressDialog
 
 
-on grabDataFromList()
+script grabDataFromList
 	set repeatCount to display dialog "How many keywords do you need?" default answer ""
 	set countValue to text returned of repeatCount as number
 	repeat countValue times
-		log "Step 1/5"
 		progressDialog("Copying the first keyword. Step 1/5")
 		tell application "Google Chrome" to activate
-		copyData()
-		log "Step 2/5"
+		clipBoardActions("c")
+		movementAction(keyRight)
 		tell application "Safari" to activate
 		progressDialog("Pasting the Keyword into the search. Step 2/5")
 		setSearchField()
 		progressDialog("Executing the search. Step 3/5")
 		clickSearchButton()
-		log "Step 3/5"
 		progressDialog("Checking to make sure the page is loaded completely. Step 4/5")
 		checkIfLoaded()
-		log "Step 4/5"
 		progressDialog("Checking to make sure the keyword is found on Etsy. Step 5/5")
 		if checkKeyword() is "no results" then
-			log "No results were found. going back to step 1..."
 			progressDialog("No results for that keyword! Going to the next row.")
 			tell application "Google Chrome" to activate
 			set the clipboard to "No Results Found"
-			pasteValues()
-			nextRow()
+			clipBoardActions("v")
+			movementAction(keyDown)
+			movementAction(keyHome)
 		else
-			log "Step 5/5"
 			progressDialog("Gathering the Data! 5/5 ")
 			getData()
 		end if
 	end repeat
-end grabDataFromList
+end script
 
 -- =======================================
 -- Handler Calls
 -- =======================================
-grabDataFromList()
+run grabDataFromList
 
