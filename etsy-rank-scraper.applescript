@@ -14,6 +14,13 @@ property keyHome : 115
 property keyEnter : 36
 
 -- ========================================
+-- Progress Dialog Handler
+-- ========================================
+on progressDialog(theMessage)
+	set progress description to theMessage
+end progressDialog
+
+-- ========================================
 -- Key Stroke Handlers
 -- ========================================
 on clipBoardActions(theKeystroke)
@@ -35,7 +42,6 @@ end movementAction
 -- ========================================
 -- Check if Logged In
 -- ========================================
-
 property loginButtonHomePath : "document.getElementsByTagName('button')[1]"
 
 on checkLogin()
@@ -50,10 +56,9 @@ on checkLogin()
 	end tell
 end checkLogin
 
-on progressDialog(theMessage)
-	set progress description to theMessage
-end progressDialog
-
+-- ========================================
+-- Ask for Credentials
+-- ========================================
 on gatherCredentials()
 	tell application "Safari"
 		set userName to display dialog "Your Etsy Rank Username?"
@@ -61,10 +66,8 @@ on gatherCredentials()
 	end tell
 end gatherCredentials
 
-
 -- ========================================
--- Find the Etsy Rank search bar in the DOM
--- and paste the clipboard
+-- Find and click the search button
 -- ========================================
 
 on clickSearchButton()
@@ -73,6 +76,10 @@ on clickSearchButton()
 		do JavaScript "document.getElementsByClassName('" & searchButtonPath & "')[0].click(); " in document 1
 	end tell
 end clickSearchButton
+
+-- ========================================
+-- Find the Search Bar in the DOM
+-- ========================================
 
 on setSearchField()
 	tell application "Safari"
@@ -87,8 +94,9 @@ on setSearchField()
 end setSearchField
 
 -- =======================================
--- Grab data from specific IDs in the DOM
+-- Grab data from the DOM
 -- =======================================
+
 on getInputByClass(theClass, theInstance)
 	tell application "Safari"
 		delay defaultDelayValue
@@ -100,9 +108,9 @@ on getInputByClass(theClass, theInstance)
 end getInputByClass
 
 -- =======================================
--- Check the browser to make sure the DOM
--- is loaded
+-- Check the browser for DOM loaded completely
 -- =======================================
+
 on checkIfLoaded()
 	set browserTimeoutValue to 60
 	tell application "Safari"
@@ -132,7 +140,7 @@ on checkIfLoaded()
 end checkIfLoaded
 
 -- =======================================
--- Check if the keyword is found
+-- Check if the search returns results
 -- =======================================
 on checkKeyword()
 	tell application "Safari"
@@ -153,52 +161,52 @@ on checkKeyword()
 	end tell
 end checkKeyword
 
-
 -- =======================================
--- Get the Etsy Data
+-- Get all the Etsy Data
 -- =======================================
 
 on getData()
-	progressDialog("Gathering the Data! (Competition Score) Step: 5/5 ")
+	progressDialog("Gathering the Data! (Competition Score)")
 	set competition to getInputByClass(selectorPathScores, 0)
 	
-	progressDialog("Gathering the Data! (Demand Score) Step: 5/5 ")
+	progressDialog("Gathering the Data! (Demand Score)")
 	set demand to getInputByClass(selectorPathScores, 1)
 	
-	progressDialog("Gathering the Data! (Engagement Score) Step: 5/5 ")
+	progressDialog("Gathering the Data! (Engagement Score)")
 	set engagement to getInputByClass(selectorPathScores, 2)
 	
-	progressDialog("Gathering the Data! (Listings) Step: 5/5 ")
+	progressDialog("Gathering the Data! (Listings)")
 	set listings to getInputByClass(selectorPathStats, 0)
 	
-	progressDialog("Gathering the Data! (Average Price) Step: 5/5 ")
+	progressDialog("Gathering the Data! (Average Price)")
 	set avgPrice to getInputByClass(selectorPathStats, 2)
 	
-	progressDialog("Gathering the Data! (Average Hearts) Step: 5/5 ")
+	progressDialog("Gathering the Data! (Average Hearts)")
 	set avgHearts to getInputByClass(selectorPathStats, 3)
 	
-	progressDialog("Gathering the Data! (Total Views) Step: 5/5 ")
+	progressDialog("Gathering the Data! (Total Views)")
 	set totalViews to getInputByClass(selectorPathStats, 4)
 	
-	progressDialog("Gathering the Data! (Average Views) Step: 5/5 ")
+	progressDialog("Gathering the Data! (Average Views)")
 	set avgViews to getInputByClass(selectorPathStats, 5)
 	
-	progressDialog("Gathering the Data! (Average Daily Views) Step: 5/5 ")
+	progressDialog("Gathering the Data! (Average Daily Views)")
 	set avgDailyViews to getInputByClass(selectorPathStats, 6)
 	
-	progressDialog("Gathering the Data! (Average Weekly Views) Step: 5/5 ")
+	progressDialog("Gathering the Data! (Average Weekly Views)")
 	set avgWeeklyViews to getInputByClass(selectorPathStats, 7)
 	
 	tell application "Google Chrome" to activate
 	-- Set clipboard to each variable and paste them into the spreadsheet
 	
-	progressDialog("Pasting the values into Google Sheets! Step: 5/5 ")
+	progressDialog("Pasting the values into Google Sheets!")
 	
 	script finalizeData
 		on recordTheData(theData)
 			delay defaultDelayValue
 			set the clipboard to theData
 			delay defaultDelayValue
+			
 			clipBoardActions("v")
 			movementAction(keyRight)
 		end recordTheData
@@ -216,8 +224,10 @@ on getData()
 	end script
 	
 	run script finalizeData
+	
 	delay defaultDelayValue
 	progressDialog("Done! On to the next keyword. Step: 5/5 ")
+	
 	movementAction(keyDown)
 	movementAction(keyHome)
 	delay defaultDelayValue
@@ -234,37 +244,27 @@ script grabDataFromList
 	
 	repeat countValue times
 		progressDialog("Checking to see if you're logged in...")
-		
 		checkLogin()
 		
 		tell application "Google Chrome" to activate
-		
 		clipBoardActions("c")
-		
 		movementAction(keyRight)
 		
 		tell application "Safari" to activate
-		
-		progressDialog("Pasting the Keyword into the search. Step 2/5")
-		
+		progressDialog("Pasting the Keyword into the search.")
 		setSearchField()
 		
-		progressDialog("Executing the search. Step 3/5")
-		
+		progressDialog("Executing the search.")
 		clickSearchButton()
 		
-		progressDialog("Checking to make sure the page is loaded completely. Step 4/5")
-		
+		progressDialog("Checking to make sure the page is loaded completely.")
 		checkIfLoaded()
 		
 		if checkKeyword() is "no results" then
-			
 			progressDialog("No results for that keyword! Going to the next row.")
 			
 			tell application "Google Chrome" to activate
-			
 			set the clipboard to "No Results Found"
-			
 			clipBoardActions("v")
 			movementAction(keyDown)
 			movementAction(keyHome)
@@ -277,7 +277,7 @@ script grabDataFromList
 end script
 
 -- =======================================
--- Handler Calls
+-- Calls
 -- =======================================
 run grabDataFromList
 
