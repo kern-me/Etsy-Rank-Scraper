@@ -80,15 +80,37 @@ end clickSearchButton
 -- ========================================
 -- Find the Search Bar in the DOM
 -- ========================================
+on RemoveFromString(theText, CharOrString)
+	local ASTID, theText, CharOrString, lst
+	set ASTID to AppleScript's text item delimiters
+	try
+		considering case
+			if theText does not contain CharOrString then Â
+				return theText
+			set AppleScript's text item delimiters to CharOrString
+			set lst to theText's text items
+		end considering
+		set AppleScript's text item delimiters to ASTID
+		return lst as text
+	on error eMsg number eNum
+		set AppleScript's text item delimiters to ASTID
+		error "Can't RemoveFromString: " & eMsg number eNum
+	end try
+end RemoveFromString
 
 on setSearchField()
 	tell application "Safari"
 		-- Set the search value to the clipboard
 		tell application "Safari" to activate
+		
 		delay 1
+		
 		set theNode to do JavaScript "document.getElementsByName('keywords')[0].value ='" & (the clipboard) & "'; " in document 1
+		
 		delay 1
+		
 		log "Found the node."
+		
 		log theNode
 	end tell
 end setSearchField
@@ -252,6 +274,11 @@ script grabDataFromList
 		
 		tell application "Safari" to activate
 		progressDialog("Pasting the Keyword into the search.")
+		
+		-- Remove any weird characters from the clipboard
+		set the clipboard to RemoveFromString(the clipboard, "'")
+		log "Weird characters are stripped!"
+		
 		setSearchField()
 		
 		progressDialog("Executing the search.")
