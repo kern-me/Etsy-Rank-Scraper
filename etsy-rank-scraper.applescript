@@ -119,6 +119,8 @@ on checkIfLoaded()
 				if secondSearchInput = (the clipboard) then
 					log "Loaded!"
 					return
+				else if secondSearchInput = "undefined" then
+					log "not loaded yet"
 				else if i is the browserTimeoutValue then
 					return "Timed out! Stopping."
 				else
