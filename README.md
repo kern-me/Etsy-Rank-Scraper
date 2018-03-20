@@ -16,6 +16,7 @@ Gathering keyword data is one of the most important parts of Etsy SEO. The proce
 Having all the metrics allows you to make decisions on what keywords are the best for your products.
 
 # How it Works #
+The following is a slightly techie overview of what happens when you run this script. 
 **Note:** *This app currently uses "activate" to toggle applications and function properly. When running this, any interruption will cause the app to crash or not record the data properly. Let the app collect data and do not use your computer while running.*
 
 1. A dialog window asks for how many keywords you want to process.
@@ -60,7 +61,7 @@ Having all the metrics allows you to make decisions on what keywords are the bes
 
 ## Instructions ##
 1. Open [Google Chrome](https://www.google.com/chrome/)
-2. Copy this [Google Sheet Template](https://docs.google.com/spreadsheets/d/1ZDJKoymIh9q4jmGtZfIlgbDnPqC5GbD9R7mas2KFfBk/edit#gid=2085843151) to your Google Drive: 
+2. Copy this [Google Sheet Template](https://docs.google.com/spreadsheets/d/1ZDJKoymIh9q4jmGtZfIlgbDnPqC5GbD9R7mas2KFfBk/edit#gid=2085843151) to your Google Drive: (for the columns and names)
 3. Type or paste your keywords into the first column "Keywords."
 4. Open [Safari](https://support.apple.com/en_GB/downloads/safari) and [Login to your Etsy Rank account.](https://etsyrank.com/)
 5. In your [Google Sheets](https://docs.google.com/spreadsheets/u/0/) document, select the keyword cell you wish to start your script.
