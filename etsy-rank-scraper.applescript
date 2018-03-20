@@ -104,9 +104,12 @@ on checkKeyword()
 	tell application "Safari"
 		log "Checking if there are results for the keyword."
 		set noResultsCheck to (do JavaScript "document.getElementsByClassName('alert')[0].innerText" in document 1)
-		if noResultsCheck is "No results found for that search term." then
+		if noResultsCheck is "undefined" then
+			log "undefined!"
+			return
+		else if noResultsCheck is "No results found for that search term." then
 			log "No Results Were Found."
-			return "no results"
+			return
 		else
 			log "Results are found! Let's keep going."
 			return "results"
