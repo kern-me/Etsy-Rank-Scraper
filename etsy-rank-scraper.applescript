@@ -33,6 +33,22 @@ on movementAction(theKeystroke)
 end movementAction
 
 -- ========================================
+-- Check if Logged In
+-- ========================================
+
+property loginButtonHomePath : "document.getElementsByTagName('button')[1]"
+
+on checkLogin()
+	tell application "Safari"
+		set findLogin to (do JavaScript "document.getElementsByTagName('button')[0].innerHTML; " in document 1)
+		if findLogin is "LOGIN" then
+			log "Need to login"
+			do JavaScript "document.getElementsByTagName('button')[0].click(); " in document 1
+		else if findLogin is "undefined" then
+			return
+		end if
+	end tell
+end checkLogin
 -- Find the Etsy Rank search bar in the DOM
 -- and paste the clipboard
 -- ========================================
