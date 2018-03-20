@@ -93,7 +93,7 @@ on getInputByClass(theClass, theInstance)
 	tell application "Safari"
 		delay defaultDelayValue
 		log "Find the DOM node"
-		set input to do JavaScript "document.getElementsByClassName('" & theClass & "')[" & theInstance & "].innerText;" in document 1
+		set input to (do JavaScript "document.getElementsByClassName('" & theClass & "')[" & theInstance & "].innerText;" in document 1)
 		delay defaultDelayValue
 		return input
 	end tell
