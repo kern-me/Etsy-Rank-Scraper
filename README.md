@@ -15,9 +15,9 @@ Gathering keyword data is one of the most important parts of Etsy SEO. The proce
 
 Having all the metrics allows you to make decisions on what keywords are the best for your products.
 
+# How it Works #
 **Note:** *This app currently uses "activate" to toggle applications and function properly. When running this, any interruption will cause the app to crash or not record the data properly. Let the app collect data and do not use your computer while running.*
 
-# How it Works #
 1. A dialog window asks for how many keywords you want to process.
 2. The script selects the first cell of your Google Spreadsheet in Google Chrome.
 3. Copies the keyword.
