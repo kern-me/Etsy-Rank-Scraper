@@ -136,17 +136,18 @@ end checkIfLoaded
 -- =======================================
 on checkKeyword()
 	tell application "Safari"
-		log "Checking if there are results for the keyword."
-		set noResultsCheck to (do JavaScript "document.getElementsByClassName('alert')[0].innerText" in document 1)
-		if noResultsCheck is "undefined" then
-			log "undefined!"
-			return
-		else if noResultsCheck is "No results found for that search term." then
-			log "No Results Were Found."
-			return
-		else
+		log "Checking to make sure the keyword is found on Etsy."
+		set noResultsCheck to (do JavaScript "document.getElementsByTagName('button')[0].innerText" in document 1)
+		
+		if noResultsCheck is not "No results found for that search term" then
 			log "Results are found! Let's keep going."
 			return "results"
+		else if noResultsCheck is "No results found for that search term." then
+			log ("No Results!")
+			return "no results"
+		else
+			log ("No Results!")
+			return "no results"
 		end if
 		return
 	end tell
