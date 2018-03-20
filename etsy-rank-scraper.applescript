@@ -223,34 +223,48 @@ on getData()
 	delay defaultDelayValue
 end getData
 
--- =======================================
--- Primary Sequence Handler
--- =======================================
-on progressDialog(theMessage)
-	set progress description to theMessage
-end progressDialog
 
+-- =======================================
+-- Primary Sequence
+-- =======================================
 
 script grabDataFromList
 	set repeatCount to display dialog "How many keywords do you need?" default answer ""
 	set countValue to text returned of repeatCount as number
+	
 	repeat countValue times
-		progressDialog("Copying the first keyword. Step 1/5")
+		progressDialog("Checking to see if you're logged in...")
+		
+		checkLogin()
+		
 		tell application "Google Chrome" to activate
+		
 		clipBoardActions("c")
+		
 		movementAction(keyRight)
+		
 		tell application "Safari" to activate
+		
 		progressDialog("Pasting the Keyword into the search. Step 2/5")
+		
 		setSearchField()
+		
 		progressDialog("Executing the search. Step 3/5")
+		
 		clickSearchButton()
+		
 		progressDialog("Checking to make sure the page is loaded completely. Step 4/5")
+		
 		checkIfLoaded()
-		progressDialog("Checking to make sure the keyword is found on Etsy. Step 5/5")
+		
 		if checkKeyword() is "no results" then
+			
 			progressDialog("No results for that keyword! Going to the next row.")
+			
 			tell application "Google Chrome" to activate
+			
 			set the clipboard to "No Results Found"
+			
 			clipBoardActions("v")
 			movementAction(keyDown)
 			movementAction(keyHome)
@@ -259,6 +273,7 @@ script grabDataFromList
 			getData()
 		end if
 	end repeat
+	progressDialog("All done! :D ")
 end script
 
 -- =======================================
