@@ -49,9 +49,24 @@ on checkLogin()
 		end if
 	end tell
 end checkLogin
+
+on progressDialog(theMessage)
+	set progress description to theMessage
+end progressDialog
+
+on gatherCredentials()
+	tell application "Safari"
+		set userName to display dialog "Your Etsy Rank Username?"
+		set thePassword to display dialog "Your Etsy Rank Password?" with hidden answer
+	end tell
+end gatherCredentials
+
+
+-- ========================================
 -- Find the Etsy Rank search bar in the DOM
 -- and paste the clipboard
 -- ========================================
+
 on clickSearchButton()
 	tell application "Safari"
 		tell application "Safari" to activate
