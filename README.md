@@ -6,14 +6,19 @@
 * 1.1.0
 
 # What does it do? #
-This script automates the process of retrieving keyword data from Etsy Rank from a premade list. You will need to compile a list of keywords and put them into the first column of your Google Sheets spreadsheet (described below.)
+This script automates the process of retrieving keyword data from EtsyRank from a premade list. You will need to compile a list of keywords and put them into the first column of your Google Sheets spreadsheet (described below.)
 
 [See it in action!](https://drive.google.com/open?id=1kDmKdSwmjSvahgoMK_QU-3ltHFcRV77o)
+
+# Why Tho? #
+Gathering keyword data is one of the most important parts of Etsy SEO. The process of gathering the data is monotonous and time-consuming. I wrote this script so that I could gather data about keywords while I was away from my computer automatically!
+
+Having all the metrics allows you to make decisions on what keywords are the best for your products.
 
 **Note:** *This app currently uses "activate" to toggle applications and function properly. When running this, any interruption will cause the app to crash or not record the data properly. Let the app collect data and do not use your computer while running.*
 
 # How it Works #
-1. Tell the script how many keywords you want to find
+1. A dialog window asks for how many keywords you want to process.
 2. The script selects the first cell of your Google Spreadsheet in Google Chrome.
 3. Copies the keyword.
 4. Switches over to Safari.
