@@ -11,6 +11,7 @@ property browserTimeoutValue : 60
 property keyRight : 124
 property keyDown : 125
 property keyHome : 115
+property keyEnter : 36
 
 -- ========================================
 -- Key Stroke Handlers
