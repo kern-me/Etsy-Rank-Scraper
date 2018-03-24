@@ -13,6 +13,11 @@ property keyDown : 125
 property keyHome : 115
 property keyEnter : 36
 
+on setClipboard(theClip)
+	set the clipboard to theClip
+end setClipboard
+
+
 -- ========================================
 -- Progress Dialog Handler
 -- ========================================
@@ -80,18 +85,48 @@ end clickSearchButton
 -- ========================================
 -- Find the Search Bar in the DOM
 -- ========================================
+on RemoveFromString(theText, CharOrString)
+	local ASTID, theText, CharOrString, lst
+	set ASTID to AppleScript's text item delimiters
+	try
+		considering case
+			if theText does not contain CharOrString then Â
+				return theText
+			set AppleScript's text item delimiters to CharOrString
+			set lst to theText's text items
+		end considering
+		set AppleScript's text item delimiters to ASTID
+		return lst as text
+	on error eMsg number eNum
+		set AppleScript's text item delimiters to ASTID
+		error "Can't RemoveFromString: " & eMsg number eNum
+	end try
+end RemoveFromString
 
 on setSearchField()
 	tell application "Safari"
 		-- Set the search value to the clipboard
-		tell application "Safari" to activate
+		activate
+		
 		delay 1
+		
 		set theNode to do JavaScript "document.getElementsByName('keywords')[0].value ='" & (the clipboard) & "'; " in document 1
+		return theNode
 		delay 1
-		log "Found the node."
-		log theNode
 	end tell
 end setSearchField
+
+on doSearchField(theValue, theTarget)
+	tell application "Safari"
+		activate
+		delay 1
+		set theNode to do JavaScript "document.getElementsByName('keywords')[" & theTarget & "].value ='" & theValue & "'; " in document 1
+		return theNode
+		delay 1
+	end tell
+end doSearchField
+
+
 
 -- =======================================
 -- Grab data from the DOM
@@ -115,26 +150,39 @@ on checkIfLoaded()
 	set browserTimeoutValue to 60
 	tell application "Safari"
 		delay 1
+		
 		repeat with i from 1 to the browserTimeoutValue
-			tell application "Safari"
-				delay 1
-				log " +++ Checking if still loading. +++ "
-				-- Select the input value to check against the clipboard
-				set firstSearchInput to (do JavaScript "document.getElementsByName('keywords')[0].value" in document 1)
-				set secondSearchInput to (do JavaScript "document.getElementsByName('keywords')[1].value" in document 1)
-				set secondSearchInputLength to (do JavaScript "document.getElementsByName('keywords')[1].value.length" in document 1)
-				delay 1
-				if secondSearchInput = (the clipboard) then
-					log "Loaded!"
-					return
-				else if secondSearchInput = "undefined" then
-					log "not loaded yet"
-				else if i is the browserTimeoutValue then
-					return "Timed out! Stopping."
-				else
-					log "Not Loaded..."
-				end if
-			end tell
+			delay 0.5
+			log "1. Check for existence of the second search input"
+			set secondSearchInputLength to (do JavaScript "document.getElementsByName('keywords')[1].value.length" in document 1)
+			
+			log "2. Find the value of the second 'keywords' input"
+			set secondSearchInput to (do JavaScript "document.getElementsByName('keywords')[1].value" in document 1)
+			
+			log "3. +++ Keyword Inputs are found and values are stored. +++ "
+			
+			log "4. Trying to see if the second search input is = to what we put in the clipboard. If it is, then the page has loaded."
+			
+			log "============================="
+			log "====== Do these Match? ======"
+			log secondSearchInput
+			log (the clipboard)
+			log "============================="
+			
+			-- EtsyRank's server doesn't seem to reliably return a correct DOM 'ready state' value, so we're using a visual cue as a condition to test for if the page has completely loaded. EtsyRank populates the search query into this second search input (labeled 'Keyword Tool') when the page has loaded, so we are using this as a visual cue.
+			
+			-- Checks to see if what we copied to the clipboard is the same as what is displayed in the second input field. This indicates that the page has completely loaded.
+			delay 0.5
+			if (secondSearchInput = (the clipboard)) then
+				return
+				log "YAY! They match! That means the page has loaded completely."
+				log "+++ Loaded! +++"
+			else if i is the browserTimeoutValue then
+				return "Timed out! Stopping."
+			else
+				log "Not loaded... Restarting the check loop."
+			end if
+			delay 0.5
 		end repeat
 	end tell
 end checkIfLoaded
@@ -241,38 +289,77 @@ end getData
 script grabDataFromList
 	set repeatCount to display dialog "How many keywords do you need?" default answer ""
 	set countValue to text returned of repeatCount as number
+	log "Clipboard is set to be blank."
+	log "Clear the search field in Safari"
+	
+	doSearchField("", 0)
+	doSearchField("", 1)
+	
+	setClipboard(" ")
 	
 	repeat countValue times
 		progressDialog("Checking to see if you're logged in...")
+		log "+++ Login Check +++"
 		checkLogin()
 		
+		log "+++ Activate Chrome +++"
 		tell application "Google Chrome" to activate
+		
+		log "Go to the first column of the row."
+		movementAction(keyHome)
+		
+		log "Copy the cell contents."
 		clipBoardActions("c")
+		
+		log "Arrow right to prepare for pasting."
 		movementAction(keyRight)
 		
 		tell application "Safari" to activate
+		log "+++ Activate Safari +++"
 		progressDialog("Pasting the Keyword into the search.")
+		
+		-- Strip non-numeric chars from string
+		set the clipboard to RemoveFromString(the clipboard, "'")
+		log "+++ Strip Desired Chars from String"
+		
+		log "+++ Search Field Actions +++"
 		setSearchField()
 		
+		log "+++ Click the Search Button. +++"
 		progressDialog("Executing the search.")
 		clickSearchButton()
 		
 		progressDialog("Checking to make sure the page is loaded completely.")
+		
+		log "+++ Check if Loaded. +++"
+		log "the clipboard contents:"
+		log (the clipboard)
 		checkIfLoaded()
 		
+		log "+++ Check Keyword Results +++"
 		if checkKeyword() is "no results" then
 			progressDialog("No results for that keyword! Going to the next row.")
+			log "No results found for that keyword."
 			
 			tell application "Google Chrome" to activate
-			set the clipboard to "No Results Found"
+			log "Activate Chrome"
+			
+			setClipboard("No Results Found")
+			log "Set clipboard to 'No Results Found'"
+			
 			clipBoardActions("v")
+			log "Paste 'No Results Found' into the cell."
 			movementAction(keyDown)
+			log "Arrow Down"
 			movementAction(keyHome)
+			log "Home key back to the first cell."
 		else
 			progressDialog("Gathering the Data! 5/5 ")
+			log "Gathering the Data!"
 			getData()
 		end if
 	end repeat
+	log "DONE!"
 	progressDialog("All done! :D ")
 end script
 
