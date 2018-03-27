@@ -4,6 +4,7 @@ property selectorPathScores : "btn btn-lg text-white"
 property selectorPathStats : "amount"
 property searchButtonPath : "btn btn-flat btn-warning"
 
+property systemDelay : 0.5
 property defaultKeyDelay : 0.2
 property defaultDelayValue : 0.75
 property browserTimeoutValue : 60
@@ -13,30 +14,86 @@ property keyDown : 125
 property keyHome : 115
 property keyEnter : 36
 
-on setClipboard(theClip)
-	set the clipboard to theClip
-end setClipboard
+property noResultsMessage : "No results found for that search term."
+property loginButtonHomePath : "document.getElementsByTagName('button')[1]"
+property nodeKeywordBtn : "[href=\"/keyword-tool\"]"
+property nodeLoginSubmit : "[type=\"submit\"]"
 
+
+property loadSuccess : "Loaded."
+property loadFail : "Not Loaded."
+property loggedOut : "Logged Out."
+property loggedIn : "Logged In"
+property errorMsg : "Error."
+property timeoutMsg : "Timed Out."
+property noResults : "No Results."
+property results : "Results."
+property noString : "No string in the clipboard."
+
+property chrome : "Google Chrome"
+property safari : "Safari"
+
+property pasteIt : "v"
+property copyIt : "c"
 
 -- ========================================
--- Progress Dialog Handler
+-- Refresh Browser
+-- ========================================
+on refresh(theApp)
+	tell application "Safari"
+		set docUrl to URL of document 1
+		set URL of document 1 to docUrl
+	end tell
+end refresh
+
+-- ========================================
+-- App Activate
+-- ========================================
+on activateApp(theApp)
+	tell application theApp to activate
+	log "activate '" & theApp & "'"
+end activateApp
+
+-- ========================================
+-- Set the Clipboard
+-- ========================================
+on setClipboard(theClip)
+	log "setClipboard()"
+	delay systemDelay
+	set the clipboard to theClip
+	delay systemDelay
+end setClipboard
+
+-- ========================================
+-- Progress Dialog
 -- ========================================
 on progressDialog(theMessage)
 	set progress description to theMessage
 end progressDialog
 
 -- ========================================
--- Key Stroke Handlers
+-- Key Strokes
 -- ========================================
+
 on clipBoardActions(theKeystroke)
+	log "clipBoardActions()"
 	tell application "System Events"
 		delay defaultKeyDelay
-		keystroke theKeystroke using command down
+		if theKeystroke is keyHome then
+			key code theKeystroke
+		else if theKeystroke is pasteIt then
+			keystroke theKeystroke using command down
+		else if theKeystroke is copyIt then
+			keystroke theKeystroke using command down
+		else
+			keystroke theKeystroke using command down
+		end if
 		delay defaultKeyDelay
 	end tell
 end clipBoardActions
 
 on movementAction(theKeystroke)
+	log "movementAction()"
 	tell application "System Events"
 		delay defaultKeyDelay
 		key code theKeystroke
@@ -45,50 +102,64 @@ on movementAction(theKeystroke)
 end movementAction
 
 -- ========================================
--- Check if Logged In
+-- DOM Events
 -- ========================================
-property loginButtonHomePath : "document.getElementsByTagName('button')[1]"
-
-on checkLogin()
+on domEvent(theDialog, theMethod, theNode, theInstance, endMethod)
+	delay systemDelay
+	progressDialog(theDialog)
+	delay systemDelay
+	activateApp(safari)
+	delay systemDelay
 	tell application "Safari"
-		set findLogin to (do JavaScript "document.getElementsByTagName('button')[0].innerHTML; " in document 1)
-		if findLogin is "LOGIN" then
-			log "Need to login"
-			do JavaScript "document.getElementsByTagName('button')[0].click(); " in document 1
-		else if findLogin is "undefined" then
-			return
-		end if
+		try
+			set doJS to "document." & theMethod & "('" & theNode & "')[" & theInstance & "]." & endMethod & "()"
+			do JavaScript doJS in document 1
+			delay systemDelay
+		on error
+			log errorMsg
+		end try
+		delay systemDelay
 	end tell
-end checkLogin
+end domEvent
+
 
 -- ========================================
--- Ask for Credentials
+-- Check Initial Load
 -- ========================================
-on gatherCredentials()
+on initLoad()
+	log "initLoad()"
 	tell application "Safari"
-		set userName to display dialog "Your Etsy Rank Username?"
-		set thePassword to display dialog "Your Etsy Rank Password?" with hidden answer
+		repeat
+			try
+				delay systemDelay
+				set doJS to "document.getElementsByName('keywords')[0].name;"
+				delay systemDelay
+				set theCheck to (do JavaScript doJS in document 1)
+				delay systemDelay
+				if theCheck is "keywords" then
+					return loadSuccess
+				else
+					return loadFail
+				end if
+				delay systemDelay
+			on error
+				log "Error"
+			end try
+		end repeat
+		delay systemDelay
 	end tell
-end gatherCredentials
+end initLoad
 
 -- ========================================
--- Find and click the search button
--- ========================================
-
-on clickSearchButton()
-	tell application "Safari"
-		tell application "Safari" to activate
-		do JavaScript "document.getElementsByClassName('" & searchButtonPath & "')[0].click(); " in document 1
-	end tell
-end clickSearchButton
-
--- ========================================
--- Find the Search Bar in the DOM
+-- Strip ASCII Characters
 -- ========================================
 on RemoveFromString(theText, CharOrString)
+	log "RemoveFromString(x,y)"
+	delay systemDelay
 	local ASTID, theText, CharOrString, lst
 	set ASTID to AppleScript's text item delimiters
 	try
+		delay systemDelay
 		considering case
 			if theText does not contain CharOrString then Â
 				return theText
@@ -101,119 +172,285 @@ on RemoveFromString(theText, CharOrString)
 		set AppleScript's text item delimiters to ASTID
 		error "Can't RemoveFromString: " & eMsg number eNum
 	end try
+	delay systemDelay
 end RemoveFromString
 
-on setSearchField()
+-- ========================================
+-- Set Value to a Node
+-- ========================================
+on setNodeValue(theFunction, theSelector, theInstance, theValue)
+	activateApp(safari)
 	tell application "Safari"
-		-- Set the search value to the clipboard
-		activate
-		
-		delay 1
-		
-		set theNode to do JavaScript "document.getElementsByName('keywords')[0].value ='" & (the clipboard) & "'; " in document 1
-		return theNode
-		delay 1
+		try
+			delay systemDelay
+			
+			set theNode to do JavaScript "document." & theFunction & "('" & theSelector & "')[" & theInstance & "].value ='" & theValue & "'; " in document 1
+			return theNode
+		on error
+			return false
+		end try
+		delay systemDelay
 	end tell
-end setSearchField
-
-on doSearchField(theValue, theTarget)
-	tell application "Safari"
-		activate
-		delay 1
-		set theNode to do JavaScript "document.getElementsByName('keywords')[" & theTarget & "].value ='" & theValue & "'; " in document 1
-		return theNode
-		delay 1
-	end tell
-end doSearchField
-
-
+end setNodeValue
 
 -- =======================================
 -- Grab data from the DOM
 -- =======================================
-
 on getInputByClass(theClass, theInstance)
 	tell application "Safari"
-		delay defaultDelayValue
-		log "Find the DOM node"
-		set input to (do JavaScript "document.getElementsByClassName('" & theClass & "')[" & theInstance & "].innerText;" in document 1)
-		delay defaultDelayValue
-		return input
+		delay systemDelay
+		try
+			delay systemDelay
+			set input to (do JavaScript "document.getElementsByClassName('" & theClass & "')[" & theInstance & "].innerText;" in document 1)
+			delay systemDelay
+			return input
+		on error
+			return noResults
+			log noResults
+		end try
 	end tell
+	delay systemDelay
 end getInputByClass
+
+-- =======================================
+-- Check Clipboard
+-- =======================================
+on checkClipboard()
+	log "checkClipboard()"
+	tell application "System Events"
+		delay systemDelay
+		set theValue to (the clipboard)
+		delay systemDelay
+		if theValue contains text then
+			return true
+		else
+			return false
+		end if
+		delay systemDelay
+	end tell
+end checkClipboard
 
 -- =======================================
 -- Check the browser for DOM loaded completely
 -- =======================================
 
 on checkIfLoaded()
-	set browserTimeoutValue to 60
+	log "checkIfLoaded()"
+	progressDialog("Checking to make sure the page is loaded completely.")
 	tell application "Safari"
-		delay 1
-		
-		repeat with i from 1 to the browserTimeoutValue
-			delay 0.5
-			log "1. Check for existence of the second search input"
-			set secondSearchInputLength to (do JavaScript "document.getElementsByName('keywords')[1].value.length" in document 1)
-			
-			log "2. Find the value of the second 'keywords' input"
-			set secondSearchInput to (do JavaScript "document.getElementsByName('keywords')[1].value" in document 1)
-			
-			log "3. +++ Keyword Inputs are found and values are stored. +++ "
-			
-			log "4. Trying to see if the second search input is = to what we put in the clipboard. If it is, then the page has loaded."
-			
-			log "============================="
-			log "====== Do these Match? ======"
-			log secondSearchInput
-			log (the clipboard)
-			log "============================="
-			
-			-- EtsyRank's server doesn't seem to reliably return a correct DOM 'ready state' value, so we're using a visual cue as a condition to test for if the page has completely loaded. EtsyRank populates the search query into this second search input (labeled 'Keyword Tool') when the page has loaded, so we are using this as a visual cue.
-			
-			-- Checks to see if what we copied to the clipboard is the same as what is displayed in the second input field. This indicates that the page has completely loaded.
-			delay 0.5
-			if (secondSearchInput = (the clipboard)) then
-				return
-				log "YAY! They match! That means the page has loaded completely."
-				log "+++ Loaded! +++"
-			else if i is the browserTimeoutValue then
-				return "Timed out! Stopping."
-			else
-				log "Not loaded... Restarting the check loop."
-			end if
-			delay 0.5
-		end repeat
+		try
+			repeat
+				set doJS to "document.getElementsByName('keywords')[1].value"
+				set secondSearchInput to (do JavaScript doJS in document 1)
+				delay systemDelay
+				
+				if secondSearchInput = (the clipboard) then
+					exit repeat
+					log loadSuccess
+				end if
+				
+				delay systemDelay
+			end repeat
+			delay systemDelay
+		end try
 	end tell
 end checkIfLoaded
 
 -- =======================================
 -- Check if the search returns results
 -- =======================================
-on checkKeyword()
+on checkForResults()
+	log "checkForResults()"
 	tell application "Safari"
-		log "Checking to make sure the keyword is found on Etsy."
-		set noResultsCheck to (do JavaScript "document.getElementsByTagName('button')[0].innerText" in document 1)
+		try
+			delay systemDelay
+			set doJS to "document.getElementsByClassName('alert')[0].innerText"
+			delay systemDelay
+			
+			set checkResults to (do JavaScript doJS in document 1)
+			
+			delay systemDelay
+			
+			if checkResults is noResultsMessage then
+				return noResults
+			else
+				return results
+			end if
+			
+		on error
+			return results
+		end try
 		
-		if noResultsCheck is not "No results found for that search term" then
-			log "Results are found! Let's keep going."
-			return "results"
-		else if noResultsCheck is "No results found for that search term." then
-			log ("No Results!")
-			return "no results"
-		else
-			log ("No Results!")
-			return "no results"
-		end if
-		return
+		delay systemDelay
 	end tell
-end checkKeyword
+end checkForResults
+
+-- ========================================
+-- Click Login Button
+-- ========================================
+on clickLogin()
+	domEvent("Clicking the Login Button", "querySelectorAll", nodeLoginSubmit, 0, "click")
+end clickLogin
+
+
+-- ========================================
+-- Click the Keyword Button
+-- ========================================
+on clickKeywordButton()
+	domEvent("Clicking the Keyword Button", "querySelectorAll", nodeKeywordBtn, 0, "click")
+end clickKeywordButton
+
+-- ========================================
+-- Click the Search Button
+-- ========================================
+on clickSearchButton()
+	domEvent("Clicking the Search Button", "getElementsByClassName", searchButtonPath, 0, "click")
+end clickSearchButton
+
+-- ========================================
+-- Set the Search Field
+-- ========================================
+on setSearchField()
+	setNodeValue("getElementsByName", "keywords", 0, (the clipboard))
+end setSearchField
+
+
+-- ========================================
+-- Check if Logged In
+-- ========================================
+on checkLogin()
+	log "checkLogin()"
+	tell application "Safari"
+		delay systemDelay
+		set doJS to "document.getElementsByTagName('h3')[0].innerText;"
+		try
+			delay systemDelay
+			set findLogin to (do JavaScript doJS in document 1)
+			set loginMsg to "Please Log In"
+			delay systemDelay
+			if findLogin is loginMsg then
+				return loggedOut
+			else
+				return loggedIn
+			end if
+		on error
+			return loggedOut
+		end try
+		delay systemDelay
+	end tell
+end checkLogin
+
+
+
+
+-- =======================================
+-- Check Login Status
+-- =======================================
+on checkLoginStatus()
+	log "checkLoginStatus()"
+	progressDialog("Checking to see if you're logged in...")
+	delay systemDelay
+	set loginStatus to checkLogin()
+	log loginStatus
+	
+	delay systemDelay
+	
+	if loginStatus is loggedOut then
+		log loginStatus
+		clickLogin()
+		set repeatCount to 1
+		repeat repeatCount times
+			delay systemDelay
+			set initLoadStatus to initLoad()
+			log initLoadStatus
+			
+			if initLoadStatus is loadSuccess then
+				log initLoadStatus
+				log loadSuccess
+				set repeatCount to 0
+			else
+				set repeatCount to 1
+			end if
+			
+			delay systemDelay
+		end repeat
+		
+	else if loginStatus is loggedIn then
+		log loggedIn
+		delay systemDelay
+		
+	end if
+	delay systemDelay
+end checkLoginStatus
+
+
+
+-- =======================================
+-- Clear Search Fields
+-- =======================================
+on clearSearchFields()
+	log "clearSearchFields()"
+	delay systemDelay
+	try
+		setNodeValue("getElementsByName", "keywords", 0, "")
+		delay systemDelay
+	on error
+		log errorMsg
+	end try
+	delay systemDelay
+	try
+		setNodeValue("getElementsByName", "keywords", 1, "")
+		delay systemDelay
+	on error
+		log errorMsg
+	end try
+	delay systemDelay
+end clearSearchFields
+
+-- =======================================
+-- Process: Next Row
+-- =======================================
+on nextRow()
+	log "nextRow()"
+	activateApp(chrome)
+	setClipboard("No Results.")
+	clipBoardActions(pasteIt)
+	movementAction(keyDown)
+	movementAction(keyHome)
+end nextRow
+
+-- =======================================
+-- Process: Copy Tag
+-- =======================================
+on copyTag()
+	log "copyTag()"
+	setClipboard("")
+	activateApp(chrome)
+	movementAction(keyHome)
+	clipBoardActions(copyIt)
+	movementAction(keyRight)
+end copyTag
+
+-- =======================================
+-- Process: Paste 'No Results'
+-- =======================================
+
+on pasteNoResults()
+	log "pasteNoResults()"
+	progressDialog("No results. Pasting 'No Results' into Google Sheets")
+	setClipboard("No Results.")
+	activateApp(chrome)
+	clipBoardActions(pasteIt)
+	movementAction(keyDown)
+	movementAction(keyHome)
+end pasteNoResults
 
 -- =======================================
 -- Get all the Etsy Data
 -- =======================================
 
 on getData()
+	log "getData()"
 	progressDialog("Gathering the Data! (Competition Score)")
 	set competition to getInputByClass(selectorPathScores, 0)
 	
@@ -244,18 +481,16 @@ on getData()
 	progressDialog("Gathering the Data! (Average Weekly Views)")
 	set avgWeeklyViews to getInputByClass(selectorPathStats, 7)
 	
-	tell application "Google Chrome" to activate
-	-- Set clipboard to each variable and paste them into the spreadsheet
+	activateApp(chrome)
 	
 	progressDialog("Pasting the values into Google Sheets!")
 	
 	script finalizeData
 		on recordTheData(theData)
-			delay defaultDelayValue
-			set the clipboard to theData
-			delay defaultDelayValue
-			
-			clipBoardActions("v")
+			delay systemDelay
+			setClipboard(theData)
+			delay systemDelay
+			clipBoardActions(pasteIt)
 			movementAction(keyRight)
 		end recordTheData
 		
@@ -272,94 +507,40 @@ on getData()
 	end script
 	
 	run script finalizeData
+	log "run script finalizeData"
 	
-	delay defaultDelayValue
 	progressDialog("Done! On to the next keyword. Step: 5/5 ")
-	
 	movementAction(keyDown)
 	movementAction(keyHome)
-	delay defaultDelayValue
 end getData
 
-
+-- =======================================
 -- =======================================
 -- Primary Sequence
 -- =======================================
-
+-- =======================================
 script grabDataFromList
 	set repeatCount to display dialog "How many keywords do you need?" default answer ""
 	set countValue to text returned of repeatCount as number
-	log "Clipboard is set to be blank."
-	log "Clear the search field in Safari"
-	
-	doSearchField("", 0)
-	doSearchField("", 1)
-	
-	setClipboard(" ")
+	clearSearchFields()
 	
 	repeat countValue times
-		progressDialog("Checking to see if you're logged in...")
-		log "+++ Login Check +++"
-		checkLogin()
-		
-		log "+++ Activate Chrome +++"
-		tell application "Google Chrome" to activate
-		
-		log "Go to the first column of the row."
-		movementAction(keyHome)
-		
-		log "Copy the cell contents."
-		clipBoardActions("c")
-		
-		log "Arrow right to prepare for pasting."
-		movementAction(keyRight)
-		
-		tell application "Safari" to activate
-		log "+++ Activate Safari +++"
-		progressDialog("Pasting the Keyword into the search.")
-		
-		-- Strip non-numeric chars from string
-		set the clipboard to RemoveFromString(the clipboard, "'")
-		log "+++ Strip Desired Chars from String"
-		
-		log "+++ Search Field Actions +++"
-		setSearchField()
-		
-		log "+++ Click the Search Button. +++"
-		progressDialog("Executing the search.")
-		clickSearchButton()
-		
-		progressDialog("Checking to make sure the page is loaded completely.")
-		
-		log "+++ Check if Loaded. +++"
-		log "the clipboard contents:"
-		log (the clipboard)
-		checkIfLoaded()
-		
-		log "+++ Check Keyword Results +++"
-		if checkKeyword() is "no results" then
-			progressDialog("No results for that keyword! Going to the next row.")
-			log "No results found for that keyword."
-			
-			tell application "Google Chrome" to activate
-			log "Activate Chrome"
-			
-			setClipboard("No Results Found")
-			log "Set clipboard to 'No Results Found'"
-			
-			clipBoardActions("v")
-			log "Paste 'No Results Found' into the cell."
-			movementAction(keyDown)
-			log "Arrow Down"
-			movementAction(keyHome)
-			log "Home key back to the first cell."
+		copyTag()
+		if setSearchField() is false then
+			pasteNoResults()
 		else
-			progressDialog("Gathering the Data! 5/5 ")
-			log "Gathering the Data!"
-			getData()
+			clickSearchButton()
+			checkIfLoaded()
+			checkLoginStatus()
+			
+			if checkForResults() is noResults then
+				pasteNoResults()
+			else
+				getData()
+			end if
 		end if
 	end repeat
-	log "DONE!"
+		
 	progressDialog("All done! :D ")
 end script
 
