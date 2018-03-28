@@ -122,34 +122,6 @@ on domEvent(theDialog, theMethod, theNode, theInstance, endMethod)
 	end tell
 end domEvent
 
-
--- ========================================
--- Check Initial Load
--- ========================================
-on initLoad()
-	log "initLoad()"
-	tell application "Safari"
-		repeat
-			try
-				delay systemDelay
-				set doJS to "document.getElementsByName('keywords')[0].name;"
-				delay systemDelay
-				set theCheck to (do JavaScript doJS in document 1)
-				delay systemDelay
-				if theCheck is "keywords" then
-					return loadSuccess
-				else
-					return loadFail
-				end if
-				delay systemDelay
-			on error
-				log "Error"
-			end try
-		end repeat
-		delay systemDelay
-	end tell
-end initLoad
-
 -- ========================================
 -- Strip ASCII Characters
 -- ========================================
@@ -230,9 +202,9 @@ on checkClipboard()
 	end tell
 end checkClipboard
 
--- =======================================
+-- =============================================
 -- Check the browser for DOM loaded completely
--- =======================================
+-- =============================================
 
 on checkIfLoaded()
 	log "checkIfLoaded()"
@@ -245,10 +217,11 @@ on checkIfLoaded()
 				delay systemDelay
 				
 				if secondSearchInput = (the clipboard) then
-					exit repeat
+					log "secondSearchInput: " & secondSearchInput & " === " & (the clipboard) & ""
 					log loadSuccess
+					delay systemDelay
+					exit repeat
 				end if
-				
 				delay systemDelay
 			end repeat
 			delay systemDelay
@@ -272,12 +245,15 @@ on checkForResults()
 			delay systemDelay
 			
 			if checkResults is noResultsMessage then
+				log "checkForResults() = " & noResults & ""
 				return noResults
 			else
+				log "checkForResults() = " & results & ""
 				return results
 			end if
 			
 		on error
+			log "checkForResults() = 'alert' selector not found. (Error)"
 			return results
 		end try
 		
@@ -289,6 +265,7 @@ end checkForResults
 -- Click Login Button
 -- ========================================
 on clickLogin()
+	log "clickLogin()"
 	domEvent("Clicking the Login Button", "querySelectorAll", nodeLoginSubmit, 0, "click")
 end clickLogin
 
@@ -297,6 +274,7 @@ end clickLogin
 -- Click the Keyword Button
 -- ========================================
 on clickKeywordButton()
+	log "clickKeywordButton()"
 	domEvent("Clicking the Keyword Button", "querySelectorAll", nodeKeywordBtn, 0, "click")
 end clickKeywordButton
 
@@ -304,6 +282,7 @@ end clickKeywordButton
 -- Click the Search Button
 -- ========================================
 on clickSearchButton()
+	log "clickSearchButton()"
 	domEvent("Clicking the Search Button", "getElementsByClassName", searchButtonPath, 0, "click")
 end clickSearchButton
 
@@ -311,6 +290,7 @@ end clickSearchButton
 -- Set the Search Field
 -- ========================================
 on setSearchField()
+	log "setSearchField()"
 	setNodeValue("getElementsByName", "keywords", 0, (the clipboard))
 end setSearchField
 
@@ -322,68 +302,115 @@ on checkLogin()
 	log "checkLogin()"
 	tell application "Safari"
 		delay systemDelay
+		
 		set doJS to "document.getElementsByTagName('h3')[0].innerText;"
+		
 		try
 			delay systemDelay
+			
 			set findLogin to (do JavaScript doJS in document 1)
+			
 			set loginMsg to "Please Log In"
+			
 			delay systemDelay
+			
 			if findLogin is loginMsg then
+				log "checkLogin() === " & loggedOut & ""
 				return loggedOut
 			else
+				log "checkLogin() === " & loggedIn & ""
 				return loggedIn
 			end if
+			
 		on error
+			log "checkLogin() === " & loggedOut & " (Error)"
 			return loggedOut
 		end try
+		
 		delay systemDelay
 	end tell
 end checkLogin
 
+-- ========================================
+-- Check Initial Load
+-- ========================================
 
-
+on initLoad()
+	log "initLoad()"
+	tell application "Safari"
+		repeat
+			try
+				delay systemDelay
+				set doJS to "document.getElementsByName('keywords')[0].name;"
+				
+				delay systemDelay
+				
+				set theCheck to (do JavaScript doJS in document 1)
+				
+				delay systemDelay
+				
+				if theCheck is "keywords" then
+					log "initLoad() = success"
+					log "theCheck === 'keywords'"
+					return loadSuccess
+					exit repeat
+					delay systemDelay
+				else
+					log "initLoad() = " & loadFail & ""
+					delay systemDelay
+				end if
+				delay systemDelay
+			on error
+				log "initLoad() = " & loadFail & " (error)"
+				log "Error"
+			end try
+		end repeat
+		delay systemDelay
+	end tell
+end initLoad
 
 -- =======================================
 -- Check Login Status
 -- =======================================
 on checkLoginStatus()
 	log "checkLoginStatus()"
+	
 	progressDialog("Checking to see if you're logged in...")
+	
 	delay systemDelay
+	
 	set loginStatus to checkLogin()
-	log loginStatus
 	
 	delay systemDelay
 	
 	if loginStatus is loggedOut then
-		log loginStatus
+		log "loginStatus = " & loginStatus & ""
+		
 		clickLogin()
-		set repeatCount to 1
-		repeat repeatCount times
+		
+		repeat
 			delay systemDelay
+			
 			set initLoadStatus to initLoad()
 			log initLoadStatus
 			
 			if initLoadStatus is loadSuccess then
-				log initLoadStatus
-				log loadSuccess
-				set repeatCount to 0
+				log "initLoadStatus == " & loadSuccess & ""
+				exit repeat
 			else
-				set repeatCount to 1
+				log "initLoadStatus == " & loadFail & ""
 			end if
 			
 			delay systemDelay
 		end repeat
 		
 	else if loginStatus is loggedIn then
-		log loggedIn
+		log "" & loginStatus & " === " & loggedIn & ""
 		delay systemDelay
 		
 	end if
 	delay systemDelay
 end checkLoginStatus
-
-
 
 -- =======================================
 -- Clear Search Fields
@@ -405,6 +432,7 @@ on clearSearchFields()
 		log errorMsg
 	end try
 	delay systemDelay
+	log "clearSearchFields() = complete"
 end clearSearchFields
 
 -- =======================================
@@ -481,6 +509,8 @@ on getData()
 	progressDialog("Gathering the Data! (Average Weekly Views)")
 	set avgWeeklyViews to getInputByClass(selectorPathStats, 7)
 	
+	log "Done collecting data."
+	
 	activateApp(chrome)
 	
 	progressDialog("Pasting the values into Google Sheets!")
@@ -505,11 +535,13 @@ on getData()
 		recordTheData(avgDailyViews)
 		recordTheData(avgWeeklyViews)
 	end script
-	
+		
 	run script finalizeData
 	log "run script finalizeData"
 	
-	progressDialog("Done! On to the next keyword. Step: 5/5 ")
+	progressDialog("Done! On to the next keyword.")
+	log "Done pasting the data into Google Sheets."
+	
 	movementAction(keyDown)
 	movementAction(keyHome)
 end getData
@@ -522,11 +554,14 @@ end getData
 script grabDataFromList
 	set repeatCount to display dialog "How many keywords do you need?" default answer ""
 	set countValue to text returned of repeatCount as number
+	log "User requested " & countValue & " keywords."
+	
 	clearSearchFields()
 	
 	repeat countValue times
 		copyTag()
 		if setSearchField() is false then
+			log "setSearchField() is false"
 			pasteNoResults()
 		else
 			clickSearchButton()
@@ -534,13 +569,16 @@ script grabDataFromList
 			checkLoginStatus()
 			
 			if checkForResults() is noResults then
+				log "checkForResults() === " & noResults & ""
 				pasteNoResults()
 			else
+				log "checkForResults() === " & noResults & ""
+				log "Getting Data..."
 				getData()
 			end if
 		end if
 	end repeat
-		
+	
 	progressDialog("All done! :D ")
 end script
 
