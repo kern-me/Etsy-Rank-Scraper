@@ -1,4 +1,5 @@
 -- Properties
+set AppleScript's text item delimiters to ","
 
 property selectorPathScores : "btn btn-lg text-white"
 property selectorPathStats : "amount"
@@ -8,11 +9,6 @@ property systemDelay : 0.5
 property defaultKeyDelay : 0.2
 property defaultDelayValue : 0.75
 property browserTimeoutValue : 60
-
-property keyRight : 124
-property keyDown : 125
-property keyHome : 115
-property keyEnter : 36
 
 property noResultsMessage : "No results found for that search term."
 property loginButtonHomePath : "document.getElementsByTagName('button')[1]"
@@ -28,13 +24,78 @@ property errorMsg : "Error."
 property timeoutMsg : "Timed Out."
 property noResults : "No Results."
 property results : "Results."
-property noString : "No string in the clipboard."
+
+property byId : "getElementById"
+property byClassName : "getElementsByClassName"
+property byTagName : "getElementsByTagName"
+property byName : "getElementsByName"
+property innerHTML : "innerHTML"
+property innerText : "innerText"
+property value : "value"
+property stripCommas : "replace(',','')"
+property stripK : "replace('k','000')"
+property splitDashes : "split(' - ',1)"
 
 property chrome : "Google Chrome"
 property safari : "Safari"
 
-property pasteIt : "v"
-property copyIt : "c"
+property currentKeyword : ""
+
+property newLine : "
+"
+
+-- Log Dividers
+on logIt(content)
+	log "------------------------------------------------"
+	log content
+	log "------------------------------------------------"
+end logIt
+
+
+on userPrompt(theText)
+	logIt("userPrompt()")
+	activate
+	display dialog theText
+end userPrompt
+
+on userPrompt2Buttons(theText, buttonText1, buttonText2)
+	logIt("userPrompt()")
+	activate
+	display dialog theText buttons {buttonText1, buttonText2}
+end userPrompt2Buttons
+
+
+-- Reading and Writing Params
+on writeTextToFile(theText, theFile, overwriteExistingContent)
+	logIt("writeTextToFile()")
+	try
+		
+		set theFile to theFile as string
+		set theOpenedFile to open for access file theFile with write permission
+		
+		if overwriteExistingContent is true then set eof of theOpenedFile to 0
+		write theText to theOpenedFile starting at eof
+		close access theOpenedFile
+		
+		return true
+	on error
+		try
+			close access file theFile
+		end try
+		
+		return false
+	end try
+end writeTextToFile
+
+
+-- Write to file
+on writeFile(theContent, writable)
+	logIt("writeFile()")
+	set this_Story to theContent
+	set theFile to (((path to desktop folder) as string) & "Etsy Rank Keyword Data.csv")
+	writeTextToFile(this_Story, theFile, writable)
+end writeFile
+
 
 -- ========================================
 -- Refresh Browser
@@ -55,72 +116,13 @@ on activateApp(theApp)
 end activateApp
 
 -- ========================================
--- Set the Clipboard
--- ========================================
-on setClipboard(theClip)
-	log "setClipboard()"
-	delay systemDelay
-	set the clipboard to theClip
-	delay systemDelay
-end setClipboard
-
--- ========================================
 -- Progress Dialog
 -- ========================================
 on progressDialog(theMessage)
 	set progress description to theMessage
 end progressDialog
 
--- ========================================
--- Key Strokes
--- ========================================
 
-on clipBoardActions(theKeystroke)
-	log "clipBoardActions()"
-	tell application "System Events"
-		delay defaultKeyDelay
-		if theKeystroke is keyHome then
-			key code theKeystroke
-		else if theKeystroke is pasteIt then
-			keystroke theKeystroke using command down
-		else if theKeystroke is copyIt then
-			keystroke theKeystroke using command down
-		else
-			keystroke theKeystroke using command down
-		end if
-		delay defaultKeyDelay
-	end tell
-end clipBoardActions
-
-on movementAction(theKeystroke)
-	log "movementAction()"
-	tell application "System Events"
-		delay defaultKeyDelay
-		key code theKeystroke
-		delay defaultKeyDelay
-	end tell
-end movementAction
-
--- ========================================
--- DOM Events
--- ========================================
-on domEvent(theDialog, theMethod, theNode, theInstance, endMethod)
-	delay systemDelay
-	progressDialog(theDialog)
-	delay systemDelay
-	activateApp(safari)
-	delay systemDelay
-	tell application "Safari"
-		try
-			set doJS to "document." & theMethod & "('" & theNode & "')[" & theInstance & "]." & endMethod & "()"
-			do JavaScript doJS in document 1
-			delay systemDelay
-		on error
-			log errorMsg
-		end try
-		delay systemDelay
-	end tell
-end domEvent
 
 -- ========================================
 -- Strip ASCII Characters
@@ -151,7 +153,6 @@ end RemoveFromString
 -- Set Value to a Node
 -- ========================================
 on setNodeValue(theFunction, theSelector, theInstance, theValue)
-	activateApp(safari)
 	tell application "Safari"
 		try
 			delay systemDelay
@@ -165,47 +166,18 @@ on setNodeValue(theFunction, theSelector, theInstance, theValue)
 	end tell
 end setNodeValue
 
--- =======================================
--- Grab data from the DOM
--- =======================================
-on getInputByClass(theClass, theInstance)
+-- Get the stats from the DOM
+on getStat(selector, instance)
+	logIt("getStat()")
 	tell application "Safari"
-		delay systemDelay
-		try
-			delay systemDelay
-			set input to (do JavaScript "document.getElementsByClassName('" & theClass & "')[" & theInstance & "].innerText;" in document 1)
-			delay systemDelay
-			return input
-		on error
-			return noResults
-			log noResults
-		end try
+		set input to do JavaScript "document.getElementsByClassName('" & selector & "')[" & instance & "].innerText." & stripCommas & ";" in document 1
+		return input
 	end tell
-	delay systemDelay
-end getInputByClass
+end getStat
 
--- =======================================
--- Check Clipboard
--- =======================================
-on checkClipboard()
-	log "checkClipboard()"
-	tell application "System Events"
-		delay systemDelay
-		set theValue to (the clipboard)
-		delay systemDelay
-		if theValue contains text then
-			return true
-		else
-			return false
-		end if
-		delay systemDelay
-	end tell
-end checkClipboard
 
--- =============================================
+
 -- Check the browser for DOM loaded completely
--- =============================================
-
 on checkIfLoaded()
 	log "checkIfLoaded()"
 	progressDialog("Checking to make sure the page is loaded completely.")
@@ -216,8 +188,7 @@ on checkIfLoaded()
 				set secondSearchInput to (do JavaScript doJS in document 1)
 				delay systemDelay
 				
-				if secondSearchInput = (the clipboard) then
-					log "secondSearchInput: " & secondSearchInput & " === " & (the clipboard) & ""
+				if secondSearchInput = currentKeyword then
 					log loadSuccess
 					delay systemDelay
 					exit repeat
@@ -229,37 +200,19 @@ on checkIfLoaded()
 	end tell
 end checkIfLoaded
 
--- =======================================
--- Check if the search returns results
--- =======================================
-on checkForResults()
-	log "checkForResults()"
+on domEvent(theDialog, theMethod, theNode, theInstance, endMethod)
+	progressDialog(theDialog)
+	delay systemDelay
 	tell application "Safari"
 		try
-			delay systemDelay
-			set doJS to "document.getElementsByClassName('alert')[0].innerText"
-			delay systemDelay
-			
-			set checkResults to (do JavaScript doJS in document 1)
-			
-			delay systemDelay
-			
-			if checkResults is noResultsMessage then
-				log "checkForResults() = " & noResults & ""
-				return noResults
-			else
-				log "checkForResults() = " & results & ""
-				return results
-			end if
-			
+			set doJS to "document." & theMethod & "('" & theNode & "')[" & theInstance & "]." & endMethod & "()"
+			do JavaScript doJS in document 1
 		on error
-			log "checkForResults() = 'alert' selector not found. (Error)"
-			return results
+			log errorMsg
 		end try
-		
-		delay systemDelay
 	end tell
-end checkForResults
+end domEvent
+
 
 -- ========================================
 -- Click Login Button
@@ -289,10 +242,17 @@ end clickSearchButton
 -- ========================================
 -- Set the Search Field
 -- ========================================
-on setSearchField()
+on setSearchField(theValue)
 	log "setSearchField()"
-	setNodeValue("getElementsByName", "keywords", 0, (the clipboard))
+	setNodeValue("getElementsByName", "keywords", 0, theValue)
 end setSearchField
+
+on userKeyword()
+	set theKeyword to display dialog "Enter a keyword" default answer ""
+	set keyword to text returned of theKeyword as text
+	set firstKeyword to keyword
+	return keyword as text
+end userKeyword
 
 
 -- ========================================
@@ -377,20 +337,12 @@ on checkLoginStatus()
 	
 	progressDialog("Checking to see if you're logged in...")
 	
-	delay systemDelay
-	
-	set loginStatus to checkLogin()
-	
-	delay systemDelay
-	
-	if loginStatus is loggedOut then
+	if checkLogin() is loggedOut then
 		log "loginStatus = " & loginStatus & ""
 		
 		clickLogin()
 		
 		repeat
-			delay systemDelay
-			
 			set initLoadStatus to initLoad()
 			log initLoadStatus
 			
@@ -401,15 +353,9 @@ on checkLoginStatus()
 				log "initLoadStatus == " & loadFail & ""
 			end if
 			
-			delay systemDelay
 		end repeat
-		
-	else if loginStatus is loggedIn then
-		log "" & loginStatus & " === " & loggedIn & ""
-		delay systemDelay
-		
 	end if
-	delay systemDelay
+	return true
 end checkLoginStatus
 
 -- =======================================
@@ -417,173 +363,80 @@ end checkLoginStatus
 -- =======================================
 on clearSearchFields()
 	log "clearSearchFields()"
-	delay systemDelay
+	
 	try
 		setNodeValue("getElementsByName", "keywords", 0, "")
 		delay systemDelay
 	on error
 		log errorMsg
 	end try
-	delay systemDelay
+	
 	try
 		setNodeValue("getElementsByName", "keywords", 1, "")
 		delay systemDelay
 	on error
 		log errorMsg
 	end try
-	delay systemDelay
+	
 	log "clearSearchFields() = complete"
 end clearSearchFields
 
 -- =======================================
--- Process: Next Row
--- =======================================
-on nextRow()
-	log "nextRow()"
-	activateApp(chrome)
-	setClipboard("No Results.")
-	clipBoardActions(pasteIt)
-	movementAction(keyDown)
-	movementAction(keyHome)
-end nextRow
-
--- =======================================
--- Process: Copy Tag
--- =======================================
-on copyTag()
-	log "copyTag()"
-	setClipboard("")
-	activateApp(chrome)
-	movementAction(keyHome)
-	clipBoardActions(copyIt)
-	movementAction(keyRight)
-end copyTag
-
--- =======================================
--- Process: Paste 'No Results'
--- =======================================
-
-on pasteNoResults()
-	log "pasteNoResults()"
-	progressDialog("No results. Pasting 'No Results' into Google Sheets")
-	setClipboard("No Results.")
-	activateApp(chrome)
-	clipBoardActions(pasteIt)
-	movementAction(keyDown)
-	movementAction(keyHome)
-end pasteNoResults
-
--- =======================================
 -- Get all the Etsy Data
 -- =======================================
+property headers : "Keyword, Competition, Demand, Engagement, Listings Found, Listings Analyzed, Average Price, Average Hearts, Total Views, Avg. Views, Avg. Daily Views, Avg. Weekly Views"
 
-on getData()
-	log "getData()"
-	progressDialog("Gathering the Data! (Competition Score)")
-	set competition to getInputByClass(selectorPathScores, 0)
+on theDataLoop()
 	
-	progressDialog("Gathering the Data! (Demand Score)")
-	set demand to getInputByClass(selectorPathScores, 1)
+	set theCount to -1
 	
-	progressDialog("Gathering the Data! (Engagement Score)")
-	set engagement to getInputByClass(selectorPathScores, 2)
-	
-	progressDialog("Gathering the Data! (Listings)")
-	set listings to getInputByClass(selectorPathStats, 0)
-	
-	progressDialog("Gathering the Data! (Average Price)")
-	set avgPrice to getInputByClass(selectorPathStats, 2)
-	
-	progressDialog("Gathering the Data! (Average Hearts)")
-	set avgHearts to getInputByClass(selectorPathStats, 3)
-	
-	progressDialog("Gathering the Data! (Total Views)")
-	set totalViews to getInputByClass(selectorPathStats, 4)
-	
-	progressDialog("Gathering the Data! (Average Views)")
-	set avgViews to getInputByClass(selectorPathStats, 5)
-	
-	progressDialog("Gathering the Data! (Average Daily Views)")
-	set avgDailyViews to getInputByClass(selectorPathStats, 6)
-	
-	progressDialog("Gathering the Data! (Average Weekly Views)")
-	set avgWeeklyViews to getInputByClass(selectorPathStats, 7)
-	
-	log "Done collecting data."
-	
-	activateApp(chrome)
-	
-	progressDialog("Pasting the values into Google Sheets!")
-	
-	script finalizeData
-		on recordTheData(theData)
-			delay systemDelay
-			setClipboard(theData)
-			delay systemDelay
-			clipBoardActions(pasteIt)
-			movementAction(keyRight)
-		end recordTheData
+	repeat 3 times
+		set updatedCount to (theCount + 1)
+		set rowData to getStat(selectorPathScores, updatedCount)
 		
-		recordTheData(competition)
-		recordTheData(demand)
-		recordTheData(engagement)
-		recordTheData(listings)
-		recordTheData(avgPrice)
-		recordTheData(avgHearts)
-		recordTheData(totalViews)
-		recordTheData(avgViews)
-		recordTheData(avgDailyViews)
-		recordTheData(avgWeeklyViews)
-	end script
-		
-	run script finalizeData
-	log "run script finalizeData"
-	
-	progressDialog("Done! On to the next keyword.")
-	log "Done pasting the data into Google Sheets."
-	
-	movementAction(keyDown)
-	movementAction(keyHome)
-end getData
-
--- =======================================
--- =======================================
--- Primary Sequence
--- =======================================
--- =======================================
-script grabDataFromList
-	set repeatCount to display dialog "How many keywords do you need?" default answer ""
-	set countValue to text returned of repeatCount as number
-	log "User requested " & countValue & " keywords."
-	
-	clearSearchFields()
-	
-	repeat countValue times
-		copyTag()
-		if setSearchField() is false then
-			log "setSearchField() is false"
-			pasteNoResults()
-		else
-			clickSearchButton()
-			checkIfLoaded()
-			checkLoginStatus()
-			
-			if checkForResults() is noResults then
-				log "checkForResults() === " & noResults & ""
-				pasteNoResults()
-			else
-				log "checkForResults() === " & noResults & ""
-				log "Getting Data..."
-				getData()
-			end if
+		if rowData is false then
+			log "No Results Found"
+			set theCount to -1
+			writeFile(currentKeyword & "," & "No Results" & newLine, false) as text
+			return false
 		end if
+		
+		set theCount to theCount + 1
+		
+		writeFile(rowData & ",", false) as text
 	end repeat
 	
-	progressDialog("All done! :D ")
-end script
+	set theCount to -1
+	
+	repeat 8 times
+		set updatedCount to (theCount + 1)
+		set rowData to getStat(selectorPathStats, updatedCount)
+		set theCount to theCount + 1
+		writeFile(rowData & ",", false) as text
+	end repeat
+	
+	writeFile(newLine, false) as text
+	
+end theDataLoop
 
--- =======================================
--- Calls
--- =======================================
-run grabDataFromList
+#
+## Calls
+#
+
+writeFile(headers & newLine, false) as text
+repeat
+	set currentKeyword to setSearchField(userKeyword())
+	
+	writeFile(currentKeyword & ",", false) as text
+	
+	clickSearchButton()
+	
+	checkIfLoaded()
+	
+	if theDataLoop() is false then
+		exit repeat
+	end if
+end repeat
+
+
 
