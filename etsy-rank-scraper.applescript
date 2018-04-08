@@ -1,8 +1,8 @@
 -- Properties
 set AppleScript's text item delimiters to ","
 
-property selectorPathScores : "btn btn-lg text-white"
-property selectorPathStats : "amount"
+property fileName : "Etsy Rank Keyword Data.csv"
+
 property searchButtonPath : "btn btn-flat btn-warning"
 
 property systemDelay : 0.5
@@ -51,6 +51,16 @@ on logIt(content)
 	log "------------------------------------------------"
 end logIt
 
+-- App Activate
+on activateApp(theApp)
+	tell application theApp to activate
+	log "activate '" & theApp & "'"
+end activateApp
+
+-- Progress Dialog
+on progressDialog(theMessage)
+	set progress description to theMessage
+end progressDialog
 
 on userPrompt(theText)
 	logIt("userPrompt()")
@@ -64,6 +74,11 @@ on userPrompt2Buttons(theText, buttonText1, buttonText2)
 	display dialog theText buttons {buttonText1, buttonText2}
 end userPrompt2Buttons
 
+
+
+#
+## FILE READING AND WRITING
+#
 
 -- Reading and Writing Params
 on writeTextToFile(theText, theFile, overwriteExistingContent)
@@ -92,114 +107,28 @@ end writeTextToFile
 on writeFile(theContent, writable)
 	logIt("writeFile()")
 	set this_Story to theContent
-	set theFile to (((path to desktop folder) as string) & "Etsy Rank Keyword Data.csv")
+	set theFile to (((path to desktop folder) as string) & fileName)
 	writeTextToFile(this_Story, theFile, writable)
 end writeFile
 
-
--- ========================================
--- Refresh Browser
--- ========================================
-on refresh(theApp)
-	tell application "Safari"
-		set docUrl to URL of document 1
-		set URL of document 1 to docUrl
-	end tell
-end refresh
-
--- ========================================
--- App Activate
--- ========================================
-on activateApp(theApp)
-	tell application theApp to activate
-	log "activate '" & theApp & "'"
-end activateApp
-
--- ========================================
--- Progress Dialog
--- ========================================
-on progressDialog(theMessage)
-	set progress description to theMessage
-end progressDialog
+#
+## DOM SETTING
+#
 
 
-
--- ========================================
--- Strip ASCII Characters
--- ========================================
-on RemoveFromString(theText, CharOrString)
-	log "RemoveFromString(x,y)"
-	delay systemDelay
-	local ASTID, theText, CharOrString, lst
-	set ASTID to AppleScript's text item delimiters
-	try
-		delay systemDelay
-		considering case
-			if theText does not contain CharOrString then Â
-				return theText
-			set AppleScript's text item delimiters to CharOrString
-			set lst to theText's text items
-		end considering
-		set AppleScript's text item delimiters to ASTID
-		return lst as text
-	on error eMsg number eNum
-		set AppleScript's text item delimiters to ASTID
-		error "Can't RemoveFromString: " & eMsg number eNum
-	end try
-	delay systemDelay
-end RemoveFromString
-
--- ========================================
 -- Set Value to a Node
--- ========================================
 on setNodeValue(theFunction, theSelector, theInstance, theValue)
 	tell application "Safari"
 		try
-			delay systemDelay
-			
 			set theNode to do JavaScript "document." & theFunction & "('" & theSelector & "')[" & theInstance & "].value ='" & theValue & "'; " in document 1
 			return theNode
 		on error
 			return false
 		end try
-		delay systemDelay
 	end tell
 end setNodeValue
 
--- Get the stats from the DOM
-on getStat(selector, instance)
-	logIt("getStat()")
-	tell application "Safari"
-		set input to do JavaScript "document.getElementsByClassName('" & selector & "')[" & instance & "].innerText." & stripCommas & ";" in document 1
-		return input
-	end tell
-end getStat
-
-
-
--- Check the browser for DOM loaded completely
-on checkIfLoaded()
-	log "checkIfLoaded()"
-	progressDialog("Checking to make sure the page is loaded completely.")
-	tell application "Safari"
-		try
-			repeat
-				set doJS to "document.getElementsByName('keywords')[1].value"
-				set secondSearchInput to (do JavaScript doJS in document 1)
-				delay systemDelay
-				
-				if secondSearchInput = currentKeyword then
-					log loadSuccess
-					delay systemDelay
-					exit repeat
-				end if
-				delay systemDelay
-			end repeat
-			delay systemDelay
-		end try
-	end tell
-end checkIfLoaded
-
+-- Interact with the DOM
 on domEvent(theDialog, theMethod, theNode, theInstance, endMethod)
 	progressDialog(theDialog)
 	delay systemDelay
@@ -213,35 +142,25 @@ on domEvent(theDialog, theMethod, theNode, theInstance, endMethod)
 	end tell
 end domEvent
 
-
--- ========================================
 -- Click Login Button
--- ========================================
 on clickLogin()
 	log "clickLogin()"
 	domEvent("Clicking the Login Button", "querySelectorAll", nodeLoginSubmit, 0, "click")
 end clickLogin
 
-
--- ========================================
 -- Click the Keyword Button
--- ========================================
 on clickKeywordButton()
 	log "clickKeywordButton()"
 	domEvent("Clicking the Keyword Button", "querySelectorAll", nodeKeywordBtn, 0, "click")
 end clickKeywordButton
 
--- ========================================
 -- Click the Search Button
--- ========================================
 on clickSearchButton()
 	log "clickSearchButton()"
 	domEvent("Clicking the Search Button", "getElementsByClassName", searchButtonPath, 0, "click")
 end clickSearchButton
 
--- ========================================
 -- Set the Search Field
--- ========================================
 on setSearchField(theValue)
 	log "setSearchField()"
 	setNodeValue("getElementsByName", "keywords", 0, theValue)
@@ -254,10 +173,33 @@ on userKeyword()
 	return keyword as text
 end userKeyword
 
+-- Clear Search Fields
+on clearSearchFields()
+	log "clearSearchFields()"
+	
+	try
+		setNodeValue("getElementsByName", "keywords", 0, "")
+		delay systemDelay
+	on error
+		log errorMsg
+	end try
+	
+	try
+		setNodeValue("getElementsByName", "keywords", 1, "")
+		delay systemDelay
+	on error
+		log errorMsg
+	end try
+	
+	log "clearSearchFields() = complete"
+end clearSearchFields
 
--- ========================================
+
+#
+## CHECK STATUSES
+#
+
 -- Check if Logged In
--- ========================================
 on checkLogin()
 	log "checkLogin()"
 	tell application "Safari"
@@ -266,13 +208,9 @@ on checkLogin()
 		set doJS to "document.getElementsByTagName('h3')[0].innerText;"
 		
 		try
-			delay systemDelay
-			
 			set findLogin to (do JavaScript doJS in document 1)
 			
 			set loginMsg to "Please Log In"
-			
-			delay systemDelay
 			
 			if findLogin is loginMsg then
 				log "checkLogin() === " & loggedOut & ""
@@ -291,10 +229,8 @@ on checkLogin()
 	end tell
 end checkLogin
 
--- ========================================
--- Check Initial Load
--- ========================================
 
+-- Check Initial Load
 on initLoad()
 	log "initLoad()"
 	tell application "Safari"
@@ -329,9 +265,8 @@ on initLoad()
 	end tell
 end initLoad
 
--- =======================================
+
 -- Check Login Status
--- =======================================
 on checkLoginStatus()
 	log "checkLoginStatus()"
 	
@@ -358,85 +293,154 @@ on checkLoginStatus()
 	return true
 end checkLoginStatus
 
--- =======================================
--- Clear Search Fields
--- =======================================
-on clearSearchFields()
-	log "clearSearchFields()"
-	
-	try
-		setNodeValue("getElementsByName", "keywords", 0, "")
-		delay systemDelay
-	on error
-		log errorMsg
-	end try
-	
-	try
-		setNodeValue("getElementsByName", "keywords", 1, "")
-		delay systemDelay
-	on error
-		log errorMsg
-	end try
-	
-	log "clearSearchFields() = complete"
-end clearSearchFields
+-- Check the browser for DOM loaded completely
+on checkIfLoaded()
+	log "checkIfLoaded()"
+	progressDialog("Checking to make sure the page is loaded completely.")
+	tell application "Safari"
+		try
+			repeat
+				set doJS to "document.getElementsByName('keywords')[1].value"
+				set secondSearchInput to (do JavaScript doJS in document 1)
+				delay systemDelay
+				
+				if secondSearchInput = currentKeyword then
+					log loadSuccess
+					delay systemDelay
+					exit repeat
+				end if
+				delay systemDelay
+			end repeat
+			delay systemDelay
+		end try
+	end tell
+end checkIfLoaded
 
--- =======================================
--- Get all the Etsy Data
--- =======================================
+
+#
+## ETSY DATA GATHERING
+#
+
 property headers : "Keyword, Competition, Demand, Engagement, Listings Found, Listings Analyzed, Average Price, Average Hearts, Total Views, Avg. Views, Avg. Daily Views, Avg. Weekly Views"
 
-on theDataLoop()
+property selectorPathScores : "btn btn-lg text-white"
+property selectorPathStats : "amount"
+property selectorRelatedTags : "getElementById('demo').getElementsByTagName"
+property delim : ","
+
+
+-- Get the stats from the DOM
+on getStat(method, selector, instance, method2)
+	logIt("getStat()")
+	tell application "Safari"
+		set input to do JavaScript "document." & method & "('" & selector & "')[" & instance & "]." & method2 & "." & stripCommas & ";" in document 1
+		return input
+	end tell
+end getStat
+
+-- Main Loop Data
+on getDataLoop(method, selector, instance, method2, errorMsg, format)
+	set theCount to instance
+	set theList to {}
+	set itemCounter to 0
 	
-	set theCount to -1
-	
-	repeat 3 times
+	repeat
 		set updatedCount to (theCount + 1)
-		set rowData to getStat(selectorPathScores, updatedCount)
+		log "the updatedCount is " & updatedCount & ""
 		
-		if rowData is false then
-			log "No Results Found"
-			set theCount to -1
-			writeFile(currentKeyword & "," & "No Results" & newLine, false) as text
-			return false
+		try
+			set rowData to getStat(method, selector, updatedCount, method2)
+			set theList to theList & {rowData}
+			log "add " & rowData & " to theList"
+			log "theList = " & theList & ""
+			set theCount to theCount + 1
+			
+		on error
+			log "End of the List"
+			exit repeat
+		end try
+	end repeat
+	
+	return theList
+	
+end getDataLoop
+
+-- Handler for Both Tag Data Loops
+on getTagData()
+	set theList to {}
+	set scores to getDataLoop(byClassName, selectorPathScores, -1, innerText, "Error.", 0)
+	set stats to getDataLoop(byClassName, selectorPathStats, -1, innerText, "Error.", 0)
+	set theList to theList & {scores, stats}
+	return theList
+end getTagData
+
+
+-- Handler for Related Tag Loop
+on getRelatedTags()
+	set theList to {}
+	set text item delimiters to "
+"
+	set relatedTags to getDataLoop(selectorRelatedTags, "a", -1, innerText, "Error.", 1)
+	set theList to theList & {relatedTags}
+	return theList as list
+end getRelatedTags
+
+-- Insert item into a list
+on insertItemInList(theItem, theList, thePosition)
+	set theListCount to length of theList
+	if thePosition is 0 then
+		return false
+	else if thePosition is less than 0 then
+		if (thePosition * -1) is greater than theListCount + 1 then return false
+	else
+		if thePosition is greater than theListCount + 1 then return false
+	end if
+	if thePosition is less than 0 then
+		if (thePosition * -1) is theListCount + 1 then
+			set beginning of theList to theItem
+		else
+			set theList to reverse of theList
+			set thePosition to (thePosition * -1)
+			if thePosition is 1 then
+				set beginning of theList to theItem
+			else if thePosition is (theListCount + 1) then
+				set end of theList to theItem
+			else
+				set theList to (items 1 thru (thePosition - 1) of theList) & theItem & (items thePosition thru -1 of theList)
+			end if
+			set theList to reverse of theList
 		end if
-		
-		set theCount to theCount + 1
-		
-		writeFile(rowData & ",", false) as text
-	end repeat
+	else
+		if thePosition is 1 then
+			set beginning of theList to theItem
+		else if thePosition is (theListCount + 1) then
+			set end of theList to theItem
+		else
+			set theList to (items 1 thru (thePosition - 1) of theList) & theItem & (items thePosition thru -1 of theList)
+		end if
+	end if
+	return theList
+end insertItemInList
+
+-- Main Routine
+
+on mainRoutine()
+	set currentKeyword to setSearchField(userKeyword())
+	clickSearchButton()
+	checkIfLoaded()
 	
-	set theCount to -1
+	writeFile(headers & newLine & currentKeyword & delim & getTagData() & newLine & " " & newLine & "Related Tags to " & "'" & currentKeyword & "'" & newLine & getRelatedTags() & newLine, false) as text
 	
-	repeat 8 times
-		set updatedCount to (theCount + 1)
-		set rowData to getStat(selectorPathStats, updatedCount)
-		set theCount to theCount + 1
-		writeFile(rowData & ",", false) as text
-	end repeat
-	
-	writeFile(newLine, false) as text
-	
-end theDataLoop
+	userPrompt("Finished!")
+end mainRoutine
 
 #
 ## Calls
 #
 
-writeFile(headers & newLine, false) as text
-repeat
-	set currentKeyword to setSearchField(userKeyword())
-	
-	writeFile(currentKeyword & ",", false) as text
-	
-	clickSearchButton()
-	
-	checkIfLoaded()
-	
-	if theDataLoop() is false then
-		exit repeat
-	end if
-end repeat
 
+mainRoutine()
+#searchRelatedTags()
+#newSearchRelatedTags()
 
 
