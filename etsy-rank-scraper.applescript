@@ -1,21 +1,14 @@
--- Properties
+###############################################
+## GLOBAL PROPERTIES
+#
 set AppleScript's text item delimiters to ","
 
 property fileName : "Etsy Rank Keyword Data.csv"
 
-property searchButtonPath : "btn btn-flat btn-warning"
-
-property systemDelay : 0.5
-property defaultKeyDelay : 0.2
-property defaultDelayValue : 0.75
-property browserTimeoutValue : 60
+property chrome : "Google Chrome"
+property safari : "Safari"
 
 property noResultsMessage : "No results found for that search term."
-property loginButtonHomePath : "document.getElementsByTagName('button')[1]"
-property nodeKeywordBtn : "[href=\"/keyword-tool\"]"
-property nodeLoginSubmit : "[type=\"submit\"]"
-
-
 property loadSuccess : "Loaded."
 property loadFail : "Not Loaded."
 property loggedOut : "Logged Out."
@@ -25,6 +18,30 @@ property timeoutMsg : "Timed Out."
 property noResults : "No Results."
 property results : "Results."
 
+property systemDelay : 0.5
+property defaultKeyDelay : 0.2
+property defaultDelayValue : 0.75
+property browserTimeoutValue : 60
+
+###############################################
+## OBJECT PROPERTIES
+#
+
+property searchButtonPath : "btn btn-flat btn-warning"
+property loginButtonHomePath : "document.getElementsByTagName('button')[1]"
+property nodeKeywordBtn : "[href=\"/keyword-tool\"]"
+property nodeLoginSubmit : "[type=\"submit\"]"
+property headers : "Keyword, Competition, Demand, Engagement, Listings Found, Listings Analyzed, Average Price, Average Hearts, Total Views, Avg. Views, Avg. Daily Views, Avg. Weekly Views"
+
+property selectorPathScores : "btn btn-lg text-white"
+property selectorPathStats : "amount"
+property selectorRelatedTags : "getElementById('demo').getElementsByTagName"
+property delim : ","
+
+###############################################
+## JAVASCRIPT PROPERTIES
+#
+
 property byId : "getElementById"
 property byClassName : "getElementsByClassName"
 property byTagName : "getElementsByTagName"
@@ -32,17 +49,18 @@ property byName : "getElementsByName"
 property innerHTML : "innerHTML"
 property innerText : "innerText"
 property value : "value"
-property stripCommas : "replace(',','')"
+property stripCommas : "replace(/,/g,'')"
 property stripK : "replace('k','000')"
 property splitDashes : "split(' - ',1)"
-
-property chrome : "Google Chrome"
-property safari : "Safari"
 
 property currentKeyword : ""
 
 property newLine : "
 "
+
+###############################################
+## LOGGING/SYSTEM HANDLERS
+#
 
 -- Log Dividers
 on logIt(content)
@@ -51,16 +69,22 @@ on logIt(content)
 	log "------------------------------------------------"
 end logIt
 
+
 -- App Activate
 on activateApp(theApp)
 	tell application theApp to activate
 	log "activate '" & theApp & "'"
 end activateApp
 
+###############################################
+## UI HANDLERS
+#
+
 -- Progress Dialog
 on progressDialog(theMessage)
 	set progress description to theMessage
 end progressDialog
+
 
 on userPrompt(theText)
 	logIt("userPrompt()")
@@ -68,15 +92,72 @@ on userPrompt(theText)
 	display dialog theText
 end userPrompt
 
+
 on userPrompt2Buttons(theText, buttonText1, buttonText2)
 	logIt("userPrompt()")
 	activate
-	display dialog theText buttons {buttonText1, buttonText2}
+	display dialog theText buttons {buttonText1, buttonText2} default button buttonText2
+	if button returned of result = buttonText1 then
+		return false
+	else if button returned of result = buttonText2 then
+		return true
+	end if
 end userPrompt2Buttons
 
+on prompt3(theText, buttonText1, buttonText2, buttonText3)
+	logIt("userPrompt()")
+	activate
+	set theDialog to display dialog theText buttons {buttonText1, buttonText2, buttonText3} default button buttonText3
+	if button returned of theDialog = buttonText1 then
+		return "answer1"
+	else if button returned of theDialog = buttonText2 then
+		return "answer2"
+	else if button returned of theDialog = buttonText3 then
+		return "answer3"
+	end if
+end prompt3
 
-
+###############################################
+## LIST HANDLING
 #
+-- Insert item into a list
+on insertItemInList(theItem, theList, thePosition)
+	set theListCount to length of theList
+	if thePosition is 0 then
+		return false
+	else if thePosition is less than 0 then
+		if (thePosition * -1) is greater than theListCount + 1 then return false
+	else
+		if thePosition is greater than theListCount + 1 then return false
+	end if
+	if thePosition is less than 0 then
+		if (thePosition * -1) is theListCount + 1 then
+			set beginning of theList to theItem
+		else
+			set theList to reverse of theList
+			set thePosition to (thePosition * -1)
+			if thePosition is 1 then
+				set beginning of theList to theItem
+			else if thePosition is (theListCount + 1) then
+				set end of theList to theItem
+			else
+				set theList to (items 1 thru (thePosition - 1) of theList) & theItem & (items thePosition thru -1 of theList)
+			end if
+			set theList to reverse of theList
+		end if
+	else
+		if thePosition is 1 then
+			set beginning of theList to theItem
+		else if thePosition is (theListCount + 1) then
+			set end of theList to theItem
+		else
+			set theList to (items 1 thru (thePosition - 1) of theList) & theItem & (items thePosition thru -1 of theList)
+		end if
+	end if
+	return theList
+end insertItemInList
+
+###############################################
 ## FILE READING AND WRITING
 #
 
@@ -111,9 +192,31 @@ on writeFile(theContent, writable)
 	writeTextToFile(this_Story, theFile, writable)
 end writeFile
 
-#
+
+################################################
 ## DOM SETTING
 #
+
+-- Clear Search Fields
+on clearSearchFields()
+	log "clearSearchFields()"
+	
+	try
+		setNodeValue("getElementsByName", "keywords", 0, "")
+		delay systemDelay
+	on error
+		log errorMsg
+	end try
+	
+	try
+		setNodeValue("getElementsByName", "keywords", 1, "")
+		delay systemDelay
+	on error
+		log errorMsg
+	end try
+	
+	log "clearSearchFields() = complete"
+end clearSearchFields
 
 
 -- Set Value to a Node
@@ -128,6 +231,7 @@ on setNodeValue(theFunction, theSelector, theInstance, theValue)
 	end tell
 end setNodeValue
 
+
 -- Interact with the DOM
 on domEvent(theDialog, theMethod, theNode, theInstance, endMethod)
 	progressDialog(theDialog)
@@ -141,6 +245,11 @@ on domEvent(theDialog, theMethod, theNode, theInstance, endMethod)
 		end try
 	end tell
 end domEvent
+
+
+###############################################
+## SPECIFIC DOM INTERACTIONS
+#
 
 -- Click Login Button
 on clickLogin()
@@ -166,6 +275,7 @@ on setSearchField(theValue)
 	setNodeValue("getElementsByName", "keywords", 0, theValue)
 end setSearchField
 
+-- User Keyword Prompt
 on userKeyword()
 	set theKeyword to display dialog "Enter a keyword" default answer ""
 	set keyword to text returned of theKeyword as text
@@ -173,29 +283,9 @@ on userKeyword()
 	return keyword as text
 end userKeyword
 
--- Clear Search Fields
-on clearSearchFields()
-	log "clearSearchFields()"
-	
-	try
-		setNodeValue("getElementsByName", "keywords", 0, "")
-		delay systemDelay
-	on error
-		log errorMsg
-	end try
-	
-	try
-		setNodeValue("getElementsByName", "keywords", 1, "")
-		delay systemDelay
-	on error
-		log errorMsg
-	end try
-	
-	log "clearSearchFields() = complete"
-end clearSearchFields
 
 
-#
+################################################
 ## CHECK STATUSES
 #
 
@@ -317,31 +407,25 @@ on checkIfLoaded()
 end checkIfLoaded
 
 
+################################################
+## DATA GATHERING
 #
-## ETSY DATA GATHERING
-#
-
-property headers : "Keyword, Competition, Demand, Engagement, Listings Found, Listings Analyzed, Average Price, Average Hearts, Total Views, Avg. Views, Avg. Daily Views, Avg. Weekly Views"
-
-property selectorPathScores : "btn btn-lg text-white"
-property selectorPathStats : "amount"
-property selectorRelatedTags : "getElementById('demo').getElementsByTagName"
-property delim : ","
-
 
 -- Get the stats from the DOM
 on getStat(method, selector, instance, method2)
 	logIt("getStat()")
 	tell application "Safari"
-		set input to do JavaScript "document." & method & "('" & selector & "')[" & instance & "]." & method2 & "." & stripCommas & ";" in document 1
+		set input to do JavaScript "document." & method & "('" & selector & "')[" & instance & "]." & method2 & "." & stripCommas & ";" as string in document 1
+		
 		return input
 	end tell
 end getStat
 
 -- Main Loop Data
-on getDataLoop(method, selector, instance, method2, errorMsg, format)
+on getDataLoop(method, selector, instance, method2, errorMsg, delimiterSetting)
 	set theCount to instance
 	set theList to {}
+	set text item delimiters to delimiterSetting
 	set itemCounter to 0
 	
 	repeat
@@ -350,80 +434,25 @@ on getDataLoop(method, selector, instance, method2, errorMsg, format)
 		
 		try
 			set rowData to getStat(method, selector, updatedCount, method2)
-			set theList to theList & {rowData}
+			insertItemInList(rowData, theList, 1)
 			log "add " & rowData & " to theList"
+			
 			log "theList = " & theList & ""
 			set theCount to theCount + 1
-			
 		on error
 			log "End of the List"
 			exit repeat
 		end try
 	end repeat
 	
-	return theList
-	
+	return the reverse of theList
 end getDataLoop
 
--- Handler for Both Tag Data Loops
-on getTagData()
-	set theList to {}
-	set scores to getDataLoop(byClassName, selectorPathScores, -1, innerText, "Error.", 0)
-	set stats to getDataLoop(byClassName, selectorPathStats, -1, innerText, "Error.", 0)
-	set theList to theList & {scores, stats}
-	return theList
-end getTagData
-
-
--- Handler for Related Tag Loop
-on getRelatedTags()
-	set theList to {}
-	set text item delimiters to "
-"
-	set relatedTags to getDataLoop(selectorRelatedTags, "a", -1, innerText, "Error.", 1)
-	set theList to theList & {relatedTags}
-	return theList as list
-end getRelatedTags
-
--- Insert item into a list
-on insertItemInList(theItem, theList, thePosition)
-	set theListCount to length of theList
-	if thePosition is 0 then
-		return false
-	else if thePosition is less than 0 then
-		if (thePosition * -1) is greater than theListCount + 1 then return false
-	else
-		if thePosition is greater than theListCount + 1 then return false
-	end if
-	if thePosition is less than 0 then
-		if (thePosition * -1) is theListCount + 1 then
-			set beginning of theList to theItem
-		else
-			set theList to reverse of theList
-			set thePosition to (thePosition * -1)
-			if thePosition is 1 then
-				set beginning of theList to theItem
-			else if thePosition is (theListCount + 1) then
-				set end of theList to theItem
-			else
-				set theList to (items 1 thru (thePosition - 1) of theList) & theItem & (items thePosition thru -1 of theList)
-			end if
-			set theList to reverse of theList
-		end if
-	else
-		if thePosition is 1 then
-			set beginning of theList to theItem
-		else if thePosition is (theListCount + 1) then
-			set end of theList to theItem
-		else
-			set theList to (items 1 thru (thePosition - 1) of theList) & theItem & (items thePosition thru -1 of theList)
-		end if
-	end if
-	return theList
-end insertItemInList
+###############################################
+## ROUTINES
+#
 
 -- Main Routine
-
 on mainRoutine()
 	set currentKeyword to setSearchField(userKeyword())
 	clickSearchButton()
@@ -434,13 +463,135 @@ on mainRoutine()
 	userPrompt("Finished!")
 end mainRoutine
 
+-- Process Related Tags Routine
+on processRelatedKeywords()
+	writeFile(headers & newLine, false)
+	set progress description to "Getting the list of related tags..."
+	
+	set relatedTagsList to getDataLoop(selectorRelatedTags, "a", -1, innerText, "Error.", ",") as list
+	
+	set theListCount to length of relatedTagsList
+	set progress total steps to theListCount
+	set progress completed steps to 0
+	set progress description to "Preparing to process."
+	
+	
+	logIt("Loop Started")
+	repeat with a from 1 to the count of relatedTagsList
+		
+		set currentItem to item a of relatedTagsList
+		set progress description to "Getting tag data for " & currentItem & " / " & a & " of " & theListCount & ""
+		setSearchField(currentItem)
+		
+		set currentKeyword to currentItem
+		
+		log "clickSearchButton()"
+		clickSearchButton()
+		
+		log "checkIfLoaded()"
+		checkIfLoaded()
+		
+		log "Getting data for " & currentItem & ""
+		set tagScores to getDataLoop(byClassName, selectorPathScores, -1, innerText, "Error.", ",")
+		set tagStats to getDataLoop(byClassName, selectorPathStats, -1, innerText, "Error.", ",")
+		
+		log "Writing row to file"
+		writeFile(currentItem & delim & tagScores & delim & tagStats & newLine, false)
+		
+		set progress completed steps to a
+		delay 1
+	end repeat
+	logIt("Loop Ended")
+	-- Progress Reset
+	set progress total steps to 0
+	set progress completed steps to 0
+	set progress description to ""
+	set progress additional description to ""
+	
+	userPrompt("Finished!")
+end processRelatedKeywords
+
+on openFile(theFile, theApp)
+	tell application "Finder"
+		open file ((path to desktop folder as text) & theFile) using ((path to applications folder as text) & theApp)
+	end tell
+end openFile
+
+-- Get results of one keyword at a time
+on getDataForOneTag()
+	writeFile(headers & newLine, false)
+	
+	repeat
+		set currentKeyword to setSearchField(userKeyword())
+		clickSearchButton()
+		checkIfLoaded()
+		
+		set tagScores to getDataLoop(byClassName, selectorPathScores, -1, innerText, "Error.", ",")
+		set tagStats to getDataLoop(byClassName, selectorPathStats, -1, innerText, "Error.", ",")
+		
+		set writeToFile to writeFile(currentKeyword & delim & tagScores & delim & tagStats & newLine, false)
+		set userResponse to userPrompt2Buttons("Search for another?", "No", "Yes")
+		
+		if userResponse is false then
+			userPrompt("Finished!")
+			exit repeat
+		end if
+	end repeat
+end getDataForOneTag
+
+
+on writeHeaders()
+	writeFile(headers & newLine, false)
+end writeHeaders
+
+-- Get Related Keywords
+
+on getRelatedKeywords()
+	set currentKeyword to setSearchField(userKeyword())
+	clickSearchButton()
+	checkIfLoaded()
+	
+	writeFile(currentKeyword & newLine, false) as text
+	
+	set theData to getDataLoop(selectorRelatedTags, "a", -1, innerText, "Error.", "\n") as text
+	
+	writeFile(theData & newLine, false) as text
+end getRelatedKeywords
+
+
+on initialPrompt()
+	repeat
+		set option1 to "Get tag data one word at a time"
+		set option2 to "Get related tags"
+		set option3 to "Get data for all related tags"
+		
+		
+		set userResponse to prompt3("What would you like to do?", option1, option2, option3)
+		
+		if userResponse is "answer1" then
+			getDataForOneTag()
+		else if userResponse is "answer2" then
+			getRelatedKeywords()
+		else if userResponse is "answer3" then
+			processRelatedKeywords()
+		end if
+		
+		set userResponse to userPrompt2Buttons("Want to do something else?", "No", "Yes")
+		
+		if userResponse is false then
+			userPrompt("Finished!")
+			exit repeat
+		end if
+	end repeat
+end initialPrompt
+
+
+
+###############################################
+## CALLS
 #
-## Calls
-#
 
-
-mainRoutine()
-#searchRelatedTags()
-#newSearchRelatedTags()
-
-
+#mainRoutine()
+#processRelatedKeywords()
+#getDataForOneTag()
+initialPrompt()
