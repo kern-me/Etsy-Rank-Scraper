@@ -301,6 +301,16 @@ on userKeyword()
 end userKeyword
 
 
+on prompt1(theText)
+	set theResponse to display dialog theText default answer ""
+	set theResponseText to text returned of theResponse as text
+	set response to theResponseText
+	return response as text
+end prompt1
+
+
+
+
 
 ################################################
 ## CHECK STATUSES
@@ -534,6 +544,8 @@ end processRelatedKeywords
 
 -- Get results of one keyword at a time
 on getDataForOneTag()
+	writeFile(headers & newLine, false)
+	
 	repeat
 		set currentKeyword to setSearchField(userKeyword())
 		clickSearchButton()
@@ -561,7 +573,6 @@ on getRelatedKeywords()
 	
 	clickSearchButton()
 	checkIfLoaded()
-	
 	set progress completed steps to 0
 	set progress description to "Loading the Page..."
 	set progress total steps to checkIfLoaded()
@@ -582,6 +593,67 @@ on getRelatedKeywords()
 	set progress additional description to ""
 end getRelatedKeywords
 
+
+
+-- Get tag data from a list
+on getTagDataFromList()
+	set theList to {}
+	repeat
+		set theTag to setSearchField(userKeyword())
+		insertItemInList(theTag, theList, 1)
+		set userResponse to userPrompt2Buttons("Add another tag?", "No", "Yes")
+		
+		if userResponse is false then
+			exit repeat
+		end if
+	end repeat
+	
+	log "theList is - " & theList & ""
+	
+	set progress description to ""
+	set theListCount to length of theList
+	set progress total steps to theListCount
+	set progress completed steps to 0
+	set progress description to ""
+	
+	logIt("Loop Started")
+	repeat with a from 1 to the count of theList
+		
+		set currentItem to item a of theList
+		set progress description to "Getting tag data for " & currentItem & " / " & a & " of " & theListCount & ""
+		setSearchField(currentItem)
+		
+		#currentKeyword is a global that is used in loop handlers so we *need* this
+		set currentKeyword to currentItem
+		
+		clickSearchButton()
+		checkIfLoaded()
+		
+		log "Getting data for " & currentItem & ""
+		set tagScores to getDataLoop(byClassName, selectorPathScores, -1, innerText, "Error.", ",")
+		set tagStats to getDataLoop(byClassName, selectorPathStats, -1, innerText, "Error.", ",")
+		
+		log "Writing row to file"
+		writeFile(currentItem & delim & tagScores & delim & tagStats & newLine, false)
+		
+		set progress completed steps to a
+		delay 1
+	end repeat
+	
+	logIt("Loop Ended")
+	-- Progress Reset
+	set progress total steps to 0
+	set progress completed steps to 0
+	set progress description to ""
+	set progress additional description to ""
+	
+	#prompt1("Finished!")
+end getTagDataFromList
+
+
+###############################################
+## CALLS
+#
 -- Initial User Prompt
 on initialPrompt()
 	set option1 to "Get tag data one word at a time"
@@ -602,9 +674,6 @@ on initialPrompt()
 	end repeat
 end initialPrompt
 
+#initialPrompt()
 
-###############################################
-## CALLS
-#
-
-initialPrompt()
+getTagDataFromList()
