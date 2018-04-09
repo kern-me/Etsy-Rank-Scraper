@@ -104,18 +104,25 @@ on userPrompt2Buttons(theText, buttonText1, buttonText2)
 	end if
 end userPrompt2Buttons
 
-on prompt3(theText, buttonText1, buttonText2, buttonText3)
+on userPromptMain(theTitle, theText, buttonText1, buttonText2, buttonText3)
 	logIt("userPrompt()")
 	activate
-	set theDialog to display dialog theText buttons {buttonText1, buttonText2, buttonText3} default button buttonText3
-	if button returned of theDialog = buttonText1 then
-		return "answer1"
-	else if button returned of theDialog = buttonText2 then
-		return "answer2"
-	else if button returned of theDialog = buttonText3 then
-		return "answer3"
-	end if
-end prompt3
+	try
+		set theDialog to display dialog theText with title theTitle buttons {buttonText1, buttonText2, buttonText3} default button 3 with icon note
+		
+		if button returned of theDialog = buttonText1 then
+			return "answer1"
+		else if button returned of theDialog = buttonText2 then
+			return "answer2"
+		else if button returned of theDialog = buttonText3 then
+			return "answer3"
+		else if button returned of theDialog = buttonText4 then
+			return false
+		end if
+	on error error_text
+		display dialog error_text buttons {"Quit"} with icon stop
+	end try
+end userPromptMain
 
 ###############################################
 ## LIST HANDLING
@@ -191,6 +198,13 @@ on writeFile(theContent, writable)
 	set theFile to (((path to desktop folder) as string) & fileName)
 	writeTextToFile(this_Story, theFile, writable)
 end writeFile
+
+-- Open a File
+on openFile(theFile, theApp)
+	tell application "Finder"
+		open file ((path to desktop folder as text) & theFile) using ((path to applications folder as text) & theApp)
+	end tell
+end openFile
 
 
 ################################################
@@ -464,17 +478,25 @@ on mainRoutine()
 end mainRoutine
 
 -- Process Related Tags Routine
+
+
+
+
+
 on processRelatedKeywords()
 	writeFile(headers & newLine, false)
-	set progress description to "Getting the list of related tags..."
+	set currentKeyword to setSearchField(userKeyword())
+	writeFile(currentKeyword & newLine, false) as text
+	clickSearchButton()
+	checkIfLoaded()
 	
+	set progress description to "Getting the list of related tags..."
 	set relatedTagsList to getDataLoop(selectorRelatedTags, "a", -1, innerText, "Error.", ",") as list
 	
 	set theListCount to length of relatedTagsList
 	set progress total steps to theListCount
 	set progress completed steps to 0
 	set progress description to "Preparing to process."
-	
 	
 	logIt("Loop Started")
 	repeat with a from 1 to the count of relatedTagsList
@@ -511,11 +533,6 @@ on processRelatedKeywords()
 	userPrompt("Finished!")
 end processRelatedKeywords
 
-on openFile(theFile, theApp)
-	tell application "Finder"
-		open file ((path to desktop folder as text) & theFile) using ((path to applications folder as text) & theApp)
-	end tell
-end openFile
 
 -- Get results of one keyword at a time
 on getDataForOneTag()
@@ -545,43 +562,48 @@ on writeHeaders()
 end writeHeaders
 
 -- Get Related Keywords
-
 on getRelatedKeywords()
 	set currentKeyword to setSearchField(userKeyword())
-	clickSearchButton()
-	checkIfLoaded()
-	
 	writeFile(currentKeyword & newLine, false) as text
 	
-	set theData to getDataLoop(selectorRelatedTags, "a", -1, innerText, "Error.", "\n") as text
+	clickSearchButton()
+	
+	set progress completed steps to 0
+	set progress description to "Loading the Page..."
+	set progress total steps to checkIfLoaded()
+	
+	
+	set progress description to "Getting Relevant Tag Data..."
+	set theData to getDataLoop(selectorRelatedTags, "a", -1, innerText, "Error.", "
+") as text
+	set theListCount to length of theData
+	set progress total steps to theData
 	
 	writeFile(theData & newLine, false) as text
+	-- Progress Reset
+	set progress total steps to 0
+	set progress completed steps to 0
+	set progress description to ""
+	set progress additional description to ""
 end getRelatedKeywords
 
-
+-- Initial User Prompt
 on initialPrompt()
+	set option1 to "Get tag data one word at a time"
+	set option2 to "Get related tags and data"
+	set option3 to "I'm done!"
+	
 	repeat
-		set option1 to "Get tag data one word at a time"
-		set option2 to "Get related tags"
-		set option3 to "Get data for all related tags"
-		
-		
-		set userResponse to prompt3("What would you like to do?", option1, option2, option3)
+		set userResponse to userPromptMain("What would you like to do?", "Choose a task.", option1, option2, option3)
 		
 		if userResponse is "answer1" then
 			getDataForOneTag()
 		else if userResponse is "answer2" then
-			getRelatedKeywords()
-		else if userResponse is "answer3" then
 			processRelatedKeywords()
-		end if
-		
-		set userResponse to userPrompt2Buttons("Want to do something else?", "No", "Yes")
-		
-		if userResponse is false then
-			userPrompt("Finished!")
+		else if userResponse is "answer3" then
 			exit repeat
 		end if
+		
 	end repeat
 end initialPrompt
 
