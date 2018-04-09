@@ -50,7 +50,6 @@ property innerHTML : "innerHTML"
 property innerText : "innerText"
 property value : "value"
 property stripCommas : "replace(/,/g,'')"
-property stripK : "replace('k','000')"
 property splitDashes : "split(' - ',1)"
 
 property currentKeyword : ""
@@ -206,6 +205,10 @@ on openFile(theFile, theApp)
 	end tell
 end openFile
 
+-- Write Headers
+on writeHeaders()
+	writeFile(headers & newLine, false)
+end writeHeaders
 
 ################################################
 ## DOM SETTING
@@ -478,11 +481,6 @@ on mainRoutine()
 end mainRoutine
 
 -- Process Related Tags Routine
-
-
-
-
-
 on processRelatedKeywords()
 	writeFile(headers & newLine, false)
 	set currentKeyword to setSearchField(userKeyword())
@@ -536,8 +534,6 @@ end processRelatedKeywords
 
 -- Get results of one keyword at a time
 on getDataForOneTag()
-	writeFile(headers & newLine, false)
-	
 	repeat
 		set currentKeyword to setSearchField(userKeyword())
 		clickSearchButton()
@@ -557,9 +553,6 @@ on getDataForOneTag()
 end getDataForOneTag
 
 
-on writeHeaders()
-	writeFile(headers & newLine, false)
-end writeHeaders
 
 -- Get Related Keywords
 on getRelatedKeywords()
@@ -567,6 +560,7 @@ on getRelatedKeywords()
 	writeFile(currentKeyword & newLine, false) as text
 	
 	clickSearchButton()
+	checkIfLoaded()
 	
 	set progress completed steps to 0
 	set progress description to "Loading the Page..."
@@ -578,6 +572,7 @@ on getRelatedKeywords()
 ") as text
 	set theListCount to length of theData
 	set progress total steps to theData
+	
 	
 	writeFile(theData & newLine, false) as text
 	-- Progress Reset
@@ -608,12 +603,8 @@ on initialPrompt()
 end initialPrompt
 
 
-
 ###############################################
 ## CALLS
 #
 
-#mainRoutine()
-#processRelatedKeywords()
-#getDataForOneTag()
 initialPrompt()
