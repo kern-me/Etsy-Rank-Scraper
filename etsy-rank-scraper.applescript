@@ -36,6 +36,9 @@ property headers : "Keyword, Competition, Demand, Engagement, Listings Found, Li
 property selectorPathScores : "btn btn-lg text-white"
 property selectorPathStats : "amount"
 property selectorRelatedTags : "getElementById('demo').getElementsByTagName"
+
+property csvDivider : "-,-,-,-,-,-,-,-,-,-,-,-"
+
 property delim : ","
 
 ###############################################
@@ -209,6 +212,13 @@ end openFile
 on writeHeaders()
 	writeFile(headers & newLine, false)
 end writeHeaders
+
+
+
+on writeDivider()
+	writeFile(csvDivider & newLine, false)
+end
+
 
 ################################################
 ## DOM SETTING
@@ -674,6 +684,6 @@ on initialPrompt()
 	end repeat
 end initialPrompt
 
-#initialPrompt()
+initialPrompt()
 
-getTagDataFromList()
+#getTagDataFromList()
