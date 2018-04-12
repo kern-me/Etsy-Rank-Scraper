@@ -217,7 +217,7 @@ end writeHeaders
 
 on writeDivider()
 	writeFile(csvDivider & newLine, false)
-end
+end writeDivider
 
 
 ################################################
@@ -423,7 +423,8 @@ end checkLoginStatus
 -- Check the browser for DOM loaded completely
 on checkIfLoaded()
 	log "checkIfLoaded()"
-	progressDialog("Checking to make sure the page is loaded completely.")
+	logIt("Checking to make sure the page is loaded completely.")
+	
 	tell application "Safari"
 		try
 			repeat
@@ -453,7 +454,6 @@ on getStat(method, selector, instance, method2)
 	logIt("getStat()")
 	tell application "Safari"
 		set input to do JavaScript "document." & method & "('" & selector & "')[" & instance & "]." & method2 & "." & stripCommas & ";" as string in document 1
-		
 		return input
 	end tell
 end getStat
@@ -471,11 +471,13 @@ on getDataLoop(method, selector, instance, method2, errorMsg, delimiterSetting)
 		
 		try
 			set rowData to getStat(method, selector, updatedCount, method2)
+			
 			insertItemInList(rowData, theList, 1)
 			log "add " & rowData & " to theList"
 			
 			log "theList = " & theList & ""
 			set theCount to theCount + 1
+			
 		on error
 			log "End of the List"
 			exit repeat
@@ -594,7 +596,6 @@ on getRelatedKeywords()
 	set theListCount to length of theData
 	set progress total steps to theData
 	
-	
 	writeFile(theData & newLine, false) as text
 	-- Progress Reset
 	set progress total steps to 0
@@ -616,6 +617,7 @@ on getTagDataFromList()
 		if userResponse is false then
 			exit repeat
 		end if
+		set theList to reverse of theList
 	end repeat
 	
 	log "theList is - " & theList & ""
@@ -674,7 +676,7 @@ on initialPrompt()
 		set userResponse to userPromptMain("What would you like to do?", "Choose a task.", option1, option2, option3)
 		
 		if userResponse is "answer1" then
-			getDataForOneTag()
+			getTagDataFromList()
 		else if userResponse is "answer2" then
 			processRelatedKeywords()
 		else if userResponse is "answer3" then
@@ -685,5 +687,7 @@ on initialPrompt()
 end initialPrompt
 
 initialPrompt()
-
 #getTagDataFromList()
+
+
+
