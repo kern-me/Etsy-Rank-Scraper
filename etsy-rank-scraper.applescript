@@ -214,10 +214,23 @@ on writeHeaders()
 end writeHeaders
 
 
-
+-- Write Divider Lines
 on writeDivider()
 	writeFile(csvDivider & newLine, false)
 end writeDivider
+
+-- Read line from file
+on makeKeywordList()
+	set theList to {}
+	set theKeywords to paragraphs of (read POSIX file "/Users/nicokillips/Desktop/keyword-list.txt")
+	repeat with nextLine in theKeywords
+		if length of nextLine is greater than 0 then
+			copy nextLine to the end of theList
+		end if
+	end repeat
+	return theList
+end makeKeywordList
+
 
 
 ################################################
@@ -420,29 +433,35 @@ on checkLoginStatus()
 	return true
 end checkLoginStatus
 
--- Check the browser for DOM loaded completely
-on checkIfLoaded()
-	log "checkIfLoaded()"
-	logIt("Checking to make sure the page is loaded completely.")
-	
+
+
+on checkIfKeywordIsAlreadyLoaded()
 	tell application "Safari"
-		try
-			repeat
-				set doJS to "document.getElementsByName('keywords')[1].value"
-				set secondSearchInput to (do JavaScript doJS in document 1)
-				delay systemDelay
-				
-				if secondSearchInput = currentKeyword then
-					log loadSuccess
-					delay systemDelay
-					exit repeat
-				end if
-				delay systemDelay
-			end repeat
-			delay systemDelay
-		end try
+		log "START checkIfKeywordIsAlreadyLoaded()"
+		#Search the DOM for the second search input value on the page
+		set doJS to "document.getElementsByName('keywords')[1].value"
+		
+		#Set the value to the variable
+		set secondSearchInput to (do JavaScript doJS in document 1)
+		
+		log "secondSearchInput is " & secondSearchInput & ""
+		log "currentKeyword is " & currentKeyword & ""
+		
+		if secondSearchInput = currentKeyword then
+			log "" & currentKeyword & " is " & secondSearchInput & ""
+			log "END checkIfKeywordIsAlreadyLoaded()"
+			log "return true"
+			log "AFTER the return?"
+			return true
+		else if secondSearchInput is not currentKeyword then
+			log "" & secondSearchInput & " is not " & currentKeyword & ""
+			log "END checkIfKeywordIsAlreadyLoaded()"
+			log "return false"
+			return false
+			log "AFTER the return?"
+		end if
 	end tell
-end checkIfLoaded
+end checkIfKeywordIsAlreadyLoaded
 
 
 ################################################
@@ -493,9 +512,16 @@ end getDataLoop
 
 -- Main Routine
 on mainRoutine()
-	set currentKeyword to setSearchField(userKeyword())
+	set currentKeyword to setSearchField(userKeyword()) as text
+	checkIfKeywordIsAlreadyLoaded()
+	
 	clickSearchButton()
-	checkIfLoaded()
+	
+	repeat while checkIfKeywordIsAlreadyLoaded() is false
+		delay 1
+		log "repeating until true"
+		delay 1
+	end repeat
 	
 	writeFile(headers & newLine & currentKeyword & delim & getTagData() & newLine & " " & newLine & "Related Tags to " & "'" & currentKeyword & "'" & newLine & getRelatedTags() & newLine, false) as text
 	
@@ -505,10 +531,19 @@ end mainRoutine
 -- Process Related Tags Routine
 on processRelatedKeywords()
 	writeFile(headers & newLine, false)
-	set currentKeyword to setSearchField(userKeyword())
+	
+	set currentKeyword to setSearchField(userKeyword()) as text
 	writeFile(currentKeyword & newLine, false) as text
+	
+	checkIfKeywordIsAlreadyLoaded()
+	
 	clickSearchButton()
-	checkIfLoaded()
+	
+	repeat while checkIfKeywordIsAlreadyLoaded() is false
+		delay 1
+		log "repeating until true"
+		delay 1
+	end repeat
 	
 	set progress description to "Getting the list of related tags..."
 	set relatedTagsList to getDataLoop(selectorRelatedTags, "a", -1, innerText, "Error.", ",") as list
@@ -523,15 +558,20 @@ on processRelatedKeywords()
 		
 		set currentItem to item a of relatedTagsList
 		set progress description to "Getting tag data for " & currentItem & " / " & a & " of " & theListCount & ""
-		setSearchField(currentItem)
 		
-		set currentKeyword to currentItem
+		setSearchField(currentItem) as text
 		
-		log "clickSearchButton()"
+		set currentKeyword to currentItem as text
+		
+		checkIfKeywordIsAlreadyLoaded()
+		
 		clickSearchButton()
 		
-		log "checkIfLoaded()"
-		checkIfLoaded()
+		repeat while checkIfKeywordIsAlreadyLoaded() is false
+			delay 1
+			log "repeating until true"
+			delay 1
+		end repeat
 		
 		log "Getting data for " & currentItem & ""
 		set tagScores to getDataLoop(byClassName, selectorPathScores, -1, innerText, "Error.", ",")
@@ -559,9 +599,17 @@ on getDataForOneTag()
 	writeFile(headers & newLine, false)
 	
 	repeat
-		set currentKeyword to setSearchField(userKeyword())
+		set currentKeyword to setSearchField(userKeyword()) as text
+		
+		checkIfKeywordIsAlreadyLoaded()
+		
 		clickSearchButton()
-		checkIfLoaded()
+		
+		repeat while checkIfKeywordIsAlreadyLoaded() is false
+			delay defaultDelayValue
+			log "repeating until true"
+			delay defaultDelayValue
+		end repeat
 		
 		set tagScores to getDataLoop(byClassName, selectorPathScores, -1, innerText, "Error.", ",")
 		set tagStats to getDataLoop(byClassName, selectorPathStats, -1, innerText, "Error.", ",")
@@ -580,11 +628,19 @@ end getDataForOneTag
 
 -- Get Related Keywords
 on getRelatedKeywords()
-	set currentKeyword to setSearchField(userKeyword())
+	set currentKeyword to setSearchField(userKeyword()) as text
 	writeFile(currentKeyword & newLine, false) as text
 	
+	checkIfKeywordIsAlreadyLoaded()
+	
 	clickSearchButton()
-	checkIfLoaded()
+	
+	repeat while checkIfKeywordIsAlreadyLoaded() is false
+		delay 1
+		log "repeating until true"
+		delay 1
+	end repeat
+	
 	set progress completed steps to 0
 	set progress description to "Loading the Page..."
 	set progress total steps to checkIfLoaded()
@@ -606,8 +662,8 @@ end getRelatedKeywords
 
 
 
--- Get tag data from a list
-on getTagDataFromList()
+-- Get Data from User Input List
+on getTagDataFromUserInputList()
 	set theList to {}
 	repeat
 		set theTag to setSearchField(userKeyword())
@@ -617,6 +673,7 @@ on getTagDataFromList()
 		if userResponse is false then
 			exit repeat
 		end if
+		
 		set theList to reverse of theList
 	end repeat
 	
@@ -633,13 +690,22 @@ on getTagDataFromList()
 		
 		set currentItem to item a of theList
 		set progress description to "Getting tag data for " & currentItem & " / " & a & " of " & theListCount & ""
-		setSearchField(currentItem)
+		
+		setSearchField(currentItem) as text
 		
 		#currentKeyword is a global that is used in loop handlers so we *need* this
-		set currentKeyword to currentItem
+		set currentKeyword to currentItem as text
+		
+		checkIfKeywordIsAlreadyLoaded()
 		
 		clickSearchButton()
-		checkIfLoaded()
+		
+		repeat while checkIfKeywordIsAlreadyLoaded() is false
+			delay 1
+			log "repeating until true"
+			delay 1
+		end repeat
+		
 		
 		log "Getting data for " & currentItem & ""
 		set tagScores to getDataLoop(byClassName, selectorPathScores, -1, innerText, "Error.", ",")
@@ -660,7 +726,62 @@ on getTagDataFromList()
 	set progress additional description to ""
 	
 	#prompt1("Finished!")
-end getTagDataFromList
+end getTagDataFromUserInputList
+
+
+-- Get Data from File
+on getTagDataFromFile()
+	logIt("Start makeKeywordList()")
+	set theList to makeKeywordList()
+	
+	set progress description to "Gathering Keyword Stats..."
+	set theListCount to length of theList
+	set progress total steps to theListCount
+	set progress completed steps to 0
+	
+	logIt("START Keyword Data Gathering Loop")
+	repeat with a from 1 to the count of theList
+		
+		set currentItem to item a of theList
+		log "Getting tag data for " & currentItem & " / " & a & " of " & theListCount & ""
+		
+		set progress description to "Getting tag data for " & currentItem & " / " & a & " of " & theListCount & ""
+		
+		#currentKeyword is a global that is used in loop handlers so we *need* this
+		set currentKeyword to currentItem as text
+		
+		set currentItem to setSearchField(currentItem) as text
+		
+		checkIfKeywordIsAlreadyLoaded()
+		
+		clickSearchButton()
+		
+		repeat while checkIfKeywordIsAlreadyLoaded() is false
+			delay 1
+			log "repeating until true"
+			delay 1
+		end repeat
+				
+		logIt("Getting data for " & currentItem & "")
+		set tagScores to getDataLoop(byClassName, selectorPathScores, -1, innerText, "Error.", ",")
+		set tagStats to getDataLoop(byClassName, selectorPathStats, -1, innerText, "Error.", ",")
+		
+		logIt("Writing the " & currentItem & " data row to file")
+		writeFile(currentItem & delim & tagScores & delim & tagStats & newLine, false)
+		
+		set progress completed steps to a
+		delay 1
+	end repeat
+	
+	logIt("END Keyword Data Gathering Loop")
+	-- Progress Reset
+	set progress total steps to 0
+	set progress completed steps to 0
+	set progress description to ""
+	set progress additional description to ""
+	
+	prompt1("Finished!")
+end getTagDataFromFile
 
 
 ###############################################
@@ -676,7 +797,7 @@ on initialPrompt()
 		set userResponse to userPromptMain("What would you like to do?", "Choose a task.", option1, option2, option3)
 		
 		if userResponse is "answer1" then
-			getTagDataFromList()
+			getTagDataFromUserInputList()
 		else if userResponse is "answer2" then
 			processRelatedKeywords()
 		else if userResponse is "answer3" then
@@ -688,6 +809,6 @@ end initialPrompt
 
 initialPrompt()
 #getTagDataFromList()
-
-
+#makeKeywordList()
+#getTagDataFromFile()
 
