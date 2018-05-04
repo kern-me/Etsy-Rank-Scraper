@@ -64,14 +64,6 @@ property newLine : "
 ## LOGGING/SYSTEM HANDLERS
 #
 
--- Log Dividers
-on logIt(content)
-	log "------------------------------------------------"
-	log content
-	log "------------------------------------------------"
-end logIt
-
-
 -- App Activate
 on activateApp(theApp)
 	tell application theApp to activate
@@ -89,14 +81,12 @@ end progressDialog
 
 
 on userPrompt(theText)
-	logIt("userPrompt()")
 	activate
 	display dialog theText
 end userPrompt
 
 
 on userPrompt2Buttons(theText, buttonText1, buttonText2)
-	logIt("userPrompt()")
 	activate
 	display dialog theText buttons {buttonText1, buttonText2} default button buttonText2
 	if button returned of result = buttonText1 then
@@ -107,7 +97,6 @@ on userPrompt2Buttons(theText, buttonText1, buttonText2)
 end userPrompt2Buttons
 
 on userPromptMain(theTitle, theText, buttonText1, buttonText2, buttonText3)
-	logIt("userPrompt()")
 	activate
 	try
 		set theDialog to display dialog theText with title theTitle buttons {buttonText1, buttonText2, buttonText3} default button 3 with icon note
@@ -172,9 +161,7 @@ end insertItemInList
 
 -- Reading and Writing Params
 on writeTextToFile(theText, theFile, overwriteExistingContent)
-	logIt("writeTextToFile()")
 	try
-		
 		set theFile to theFile as string
 		set theOpenedFile to open for access file theFile with write permission
 		
@@ -195,7 +182,6 @@ end writeTextToFile
 
 -- Write to file
 on writeFile(theContent, writable)
-	logIt("writeFile()")
 	set this_Story to theContent
 	set theFile to (((path to desktop folder) as string) & fileName)
 	writeTextToFile(this_Story, theFile, writable)
@@ -470,7 +456,6 @@ end checkIfKeywordIsAlreadyLoaded
 
 -- Get the stats from the DOM
 on getStat(method, selector, instance, method2)
-	logIt("getStat()")
 	tell application "Safari"
 		set input to do JavaScript "document." & method & "('" & selector & "')[" & instance & "]." & method2 & "." & stripCommas & ";" as string in document 1
 		return input
@@ -553,7 +538,6 @@ on processRelatedKeywords()
 	set progress completed steps to 0
 	set progress description to "Preparing to process."
 	
-	logIt("Loop Started")
 	repeat with a from 1 to the count of relatedTagsList
 		
 		set currentItem to item a of relatedTagsList
@@ -573,11 +557,9 @@ on processRelatedKeywords()
 			delay 1
 		end repeat
 		
-		log "Getting data for " & currentItem & ""
 		set tagScores to getDataLoop(byClassName, selectorPathScores, -1, innerText, "Error.", ",")
 		set tagStats to getDataLoop(byClassName, selectorPathStats, -1, innerText, "Error.", ",")
 		
-		log "Writing row to file"
 		writeFile(currentItem & delim & tagScores & delim & tagStats & newLine, false)
 		
 		set progress completed steps to a
@@ -677,23 +659,18 @@ on getTagDataFromUserInputList()
 		set theList to reverse of theList
 	end repeat
 	
-	log "theList is - " & theList & ""
-	
 	set progress description to ""
 	set theListCount to length of theList
 	set progress total steps to theListCount
 	set progress completed steps to 0
 	set progress description to ""
 	
-	logIt("Loop Started")
 	repeat with a from 1 to the count of theList
 		
 		set currentItem to item a of theList
 		set progress description to "Getting tag data for " & currentItem & " / " & a & " of " & theListCount & ""
 		
 		setSearchField(currentItem) as text
-		
-		#currentKeyword is a global that is used in loop handlers so we *need* this
 		set currentKeyword to currentItem as text
 		
 		checkIfKeywordIsAlreadyLoaded()
@@ -706,32 +683,25 @@ on getTagDataFromUserInputList()
 			delay 1
 		end repeat
 		
-		
-		log "Getting data for " & currentItem & ""
 		set tagScores to getDataLoop(byClassName, selectorPathScores, -1, innerText, "Error.", ",")
 		set tagStats to getDataLoop(byClassName, selectorPathStats, -1, innerText, "Error.", ",")
 		
-		log "Writing row to file"
 		writeFile(currentItem & delim & tagScores & delim & tagStats & newLine, false)
 		
 		set progress completed steps to a
 		delay 1
 	end repeat
 	
-	logIt("Loop Ended")
 	-- Progress Reset
 	set progress total steps to 0
 	set progress completed steps to 0
 	set progress description to ""
 	set progress additional description to ""
-	
-	#prompt1("Finished!")
 end getTagDataFromUserInputList
 
 
 -- Get Data from File
 on getTagDataFromFile()
-	logIt("Start makeKeywordList()")
 	set theList to makeKeywordList()
 	
 	set progress description to "Gathering Keyword Stats..."
@@ -739,12 +709,8 @@ on getTagDataFromFile()
 	set progress total steps to theListCount
 	set progress completed steps to 0
 	
-	logIt("START Keyword Data Gathering Loop")
 	repeat with a from 1 to the count of theList
-		
 		set currentItem to item a of theList
-		log "Getting tag data for " & currentItem & " / " & a & " of " & theListCount & ""
-		
 		set progress description to "Getting tag data for " & currentItem & " / " & a & " of " & theListCount & ""
 		
 		#currentKeyword is a global that is used in loop handlers so we *need* this
@@ -761,19 +727,18 @@ on getTagDataFromFile()
 			log "repeating until true"
 			delay 1
 		end repeat
-				
-		logIt("Getting data for " & currentItem & "")
+		
+		
 		set tagScores to getDataLoop(byClassName, selectorPathScores, -1, innerText, "Error.", ",")
 		set tagStats to getDataLoop(byClassName, selectorPathStats, -1, innerText, "Error.", ",")
 		
-		logIt("Writing the " & currentItem & " data row to file")
+		
 		writeFile(currentItem & delim & tagScores & delim & tagStats & newLine, false)
 		
 		set progress completed steps to a
 		delay 1
 	end repeat
 	
-	logIt("END Keyword Data Gathering Loop")
 	-- Progress Reset
 	set progress total steps to 0
 	set progress completed steps to 0
