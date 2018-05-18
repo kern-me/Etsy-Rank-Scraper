@@ -67,7 +67,6 @@ property newLine : "
 -- App Activate
 on activateApp(theApp)
 	tell application theApp to activate
-	log "activate '" & theApp & "'"
 end activateApp
 
 ###############################################
@@ -225,8 +224,6 @@ end makeKeywordList
 
 -- Clear Search Fields
 on clearSearchFields()
-	log "clearSearchFields()"
-	
 	try
 		setNodeValue("getElementsByName", "keywords", 0, "")
 		delay systemDelay
@@ -279,25 +276,21 @@ end domEvent
 
 -- Click Login Button
 on clickLogin()
-	log "clickLogin()"
 	domEvent("Clicking the Login Button", "querySelectorAll", nodeLoginSubmit, 0, "click")
 end clickLogin
 
 -- Click the Keyword Button
 on clickKeywordButton()
-	log "clickKeywordButton()"
 	domEvent("Clicking the Keyword Button", "querySelectorAll", nodeKeywordBtn, 0, "click")
 end clickKeywordButton
 
 -- Click the Search Button
 on clickSearchButton()
-	log "clickSearchButton()"
 	domEvent("Clicking the Search Button", "getElementsByClassName", searchButtonPath, 0, "click")
 end clickSearchButton
 
 -- Set the Search Field
 on setSearchField(theValue)
-	log "setSearchField()"
 	setNodeValue("getElementsByName", "keywords", 0, theValue)
 end setSearchField
 
@@ -327,7 +320,6 @@ end prompt1
 
 -- Check if Logged In
 on checkLogin()
-	log "checkLogin()"
 	tell application "Safari"
 		delay systemDelay
 		
@@ -339,15 +331,12 @@ on checkLogin()
 			set loginMsg to "Please Log In"
 			
 			if findLogin is loginMsg then
-				log "checkLogin() === " & loggedOut & ""
 				return loggedOut
 			else
-				log "checkLogin() === " & loggedIn & ""
 				return loggedIn
 			end if
 			
 		on error
-			log "checkLogin() === " & loggedOut & " (Error)"
 			return loggedOut
 		end try
 		
@@ -372,18 +361,14 @@ on initLoad()
 				delay systemDelay
 				
 				if theCheck is "keywords" then
-					log "initLoad() = success"
-					log "theCheck === 'keywords'"
 					return loadSuccess
 					exit repeat
 					delay systemDelay
 				else
-					log "initLoad() = " & loadFail & ""
 					delay systemDelay
 				end if
 				delay systemDelay
 			on error
-				log "initLoad() = " & loadFail & " (error)"
 				log "Error"
 			end try
 		end repeat
@@ -394,24 +379,15 @@ end initLoad
 
 -- Check Login Status
 on checkLoginStatus()
-	log "checkLoginStatus()"
-	
 	progressDialog("Checking to see if you're logged in...")
 	
 	if checkLogin() is loggedOut then
-		log "loginStatus = " & loginStatus & ""
-		
 		clickLogin()
 		
 		repeat
 			set initLoadStatus to initLoad()
-			log initLoadStatus
-			
 			if initLoadStatus is loadSuccess then
-				log "initLoadStatus == " & loadSuccess & ""
 				exit repeat
-			else
-				log "initLoadStatus == " & loadFail & ""
 			end if
 			
 		end repeat
@@ -423,28 +399,16 @@ end checkLoginStatus
 
 on checkIfKeywordIsAlreadyLoaded()
 	tell application "Safari"
-		log "START checkIfKeywordIsAlreadyLoaded()"
 		#Search the DOM for the second search input value on the page
 		set doJS to "document.getElementsByName('keywords')[1].value"
 		
 		#Set the value to the variable
 		set secondSearchInput to (do JavaScript doJS in document 1)
 		
-		log "secondSearchInput is " & secondSearchInput & ""
-		log "currentKeyword is " & currentKeyword & ""
-		
 		if secondSearchInput = currentKeyword then
-			log "" & currentKeyword & " is " & secondSearchInput & ""
-			log "END checkIfKeywordIsAlreadyLoaded()"
-			log "return true"
-			log "AFTER the return?"
 			return true
 		else if secondSearchInput is not currentKeyword then
-			log "" & secondSearchInput & " is not " & currentKeyword & ""
-			log "END checkIfKeywordIsAlreadyLoaded()"
-			log "return false"
 			return false
-			log "AFTER the return?"
 		end if
 	end tell
 end checkIfKeywordIsAlreadyLoaded
@@ -471,19 +435,15 @@ on getDataLoop(method, selector, instance, method2, errorMsg, delimiterSetting)
 	
 	repeat
 		set updatedCount to (theCount + 1)
-		log "the updatedCount is " & updatedCount & ""
 		
 		try
 			set rowData to getStat(method, selector, updatedCount, method2)
 			
 			insertItemInList(rowData, theList, 1)
-			log "add " & rowData & " to theList"
 			
-			log "theList = " & theList & ""
 			set theCount to theCount + 1
 			
 		on error
-			log "End of the List"
 			exit repeat
 		end try
 	end repeat
@@ -513,14 +473,20 @@ on mainRoutine()
 	userPrompt("Finished!")
 end mainRoutine
 
+##############################################
 -- Process Related Tags Routine
+##############################################
 on processRelatedKeywords()
 	writeFile(headers & newLine, false)
 	
 	set currentKeyword to setSearchField(userKeyword()) as text
 	writeFile(currentKeyword & newLine, false) as text
 	
+	delay 0.2
+	
 	checkIfKeywordIsAlreadyLoaded()
+	
+	delay 0.2
 	
 	clickSearchButton()
 	
@@ -531,7 +497,12 @@ on processRelatedKeywords()
 	end repeat
 	
 	set progress description to "Getting the list of related tags..."
+	
+	delay 0.2
+	
 	set relatedTagsList to getDataLoop(selectorRelatedTags, "a", -1, innerText, "Error.", ",") as list
+	
+	delay 0.2
 	
 	set theListCount to length of relatedTagsList
 	set progress total steps to theListCount
@@ -565,7 +536,6 @@ on processRelatedKeywords()
 		set progress completed steps to a
 		delay 1
 	end repeat
-	logIt("Loop Ended")
 	-- Progress Reset
 	set progress total steps to 0
 	set progress completed steps to 0
@@ -575,8 +545,9 @@ on processRelatedKeywords()
 	userPrompt("Finished!")
 end processRelatedKeywords
 
-
+##############################################
 -- Get results of one keyword at a time
+##############################################
 on getDataForOneTag()
 	writeFile(headers & newLine, false)
 	
@@ -607,8 +578,9 @@ on getDataForOneTag()
 end getDataForOneTag
 
 
-
+##############################################
 -- Get Related Keywords
+##############################################
 on getRelatedKeywords()
 	set currentKeyword to setSearchField(userKeyword()) as text
 	writeFile(currentKeyword & newLine, false) as text
@@ -625,7 +597,7 @@ on getRelatedKeywords()
 	
 	set progress completed steps to 0
 	set progress description to "Loading the Page..."
-	set progress total steps to checkIfLoaded()
+	set progress total steps to checkIfKeywordIsAlreadyLoaded()
 	
 	
 	set progress description to "Getting Relevant Tag Data..."
@@ -643,8 +615,9 @@ on getRelatedKeywords()
 end getRelatedKeywords
 
 
-
+##############################################
 -- Get Data from User Input List
+##############################################
 on getTagDataFromUserInputList()
 	set theList to {}
 	repeat
@@ -699,8 +672,9 @@ on getTagDataFromUserInputList()
 	set progress additional description to ""
 end getTagDataFromUserInputList
 
-
+##############################################
 -- Get Data from File
+##############################################
 on getTagDataFromFile()
 	set theList to makeKeywordList()
 	
@@ -773,7 +747,8 @@ on initialPrompt()
 end initialPrompt
 
 initialPrompt()
-#getTagDataFromList()
 #makeKeywordList()
 #getTagDataFromFile()
+#processRelatedKeywords()
+
 
