@@ -8,8 +8,6 @@
 # What does it do? #
 This script automates the process of retrieving keyword data from EtsyRank from a premade list. You will need to compile a list of keywords and put them into the first column of your Google Sheets spreadsheet (described below.)
 
-[See it in action!](https://drive.google.com/open?id=1kDmKdSwmjSvahgoMK_QU-3ltHFcRV77o)
-
 # Why Tho? #
 Gathering keyword data is one of the most important parts of Etsy SEO. The process of gathering the data is monotonous and time-consuming. I wrote this script so that I could gather data about keywords while I was away from my computer automatically!
 
