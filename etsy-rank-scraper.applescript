@@ -1,6 +1,7 @@
-###############################################
-## GLOBAL PROPERTIES
-#
+##############################################
+-- GLOBAL PROPERTIES
+##############################################
+
 set AppleScript's text item delimiters to ","
 
 property fileName : "Etsy Rank Keyword Data.csv"
@@ -23,9 +24,9 @@ property defaultKeyDelay : 0.2
 property defaultDelayValue : 0.75
 property browserTimeoutValue : 60
 
-###############################################
-## OBJECT PROPERTIES
-#
+##############################################
+-- OBJECT PROPERTIES
+##############################################
 
 property searchButtonPath : "btn btn-flat btn-warning"
 property loginButtonHomePath : "document.getElementsByTagName('button')[1]"
@@ -41,9 +42,9 @@ property csvDivider : "-,-,-,-,-,-,-,-,-,-,-,-"
 
 property delim : ","
 
-###############################################
-## JAVASCRIPT PROPERTIES
-#
+##############################################
+-- JAVASCRIPT PROPERTIES
+##############################################
 
 property byId : "getElementById"
 property byClassName : "getElementsByClassName"
@@ -60,18 +61,18 @@ property currentKeyword : ""
 property newLine : "
 "
 
-###############################################
-## LOGGING/SYSTEM HANDLERS
-#
+##############################################
+-- LOGGING/SYSTEM HANDLERS
+##############################################
 
 -- App Activate
 on activateApp(theApp)
 	tell application theApp to activate
 end activateApp
 
-###############################################
-## UI HANDLERS
-#
+##############################################
+-- UI HANDLERS
+##############################################
 
 -- Progress Dialog
 on progressDialog(theMessage)
@@ -114,9 +115,10 @@ on userPromptMain(theTitle, theText, buttonText1, buttonText2, buttonText3)
 	end try
 end userPromptMain
 
-###############################################
-## LIST HANDLING
-#
+##############################################
+-- LIST HANDLING
+##############################################
+
 -- Insert item into a list
 on insertItemInList(theItem, theList, thePosition)
 	set theListCount to length of theList
@@ -154,9 +156,9 @@ on insertItemInList(theItem, theList, thePosition)
 	return theList
 end insertItemInList
 
-###############################################
-## FILE READING AND WRITING
-#
+##############################################
+-- FILE READING AND WRITING
+##############################################
 
 -- Reading and Writing Params
 on writeTextToFile(theText, theFile, overwriteExistingContent)
@@ -218,9 +220,9 @@ end makeKeywordList
 
 
 
-################################################
-## DOM SETTING
-#
+##############################################
+-- DOM SETTING
+##############################################
 
 -- Clear Search Fields
 on clearSearchFields()
@@ -270,9 +272,9 @@ on domEvent(theDialog, theMethod, theNode, theInstance, endMethod)
 end domEvent
 
 
-###############################################
-## SPECIFIC DOM INTERACTIONS
-#
+##############################################
+-- SPECIFIC DOM INTERACTIONS
+##############################################
 
 -- Click Login Button
 on clickLogin()
@@ -314,9 +316,9 @@ end prompt1
 
 
 
-################################################
-## CHECK STATUSES
-#
+##############################################
+-- CHECK STATUSES
+##############################################
 
 -- Check if Logged In
 on checkLogin()
@@ -414,9 +416,9 @@ on checkIfKeywordIsAlreadyLoaded()
 end checkIfKeywordIsAlreadyLoaded
 
 
-################################################
-## DATA GATHERING
-#
+##############################################
+-- DATA GATHERING
+##############################################
 
 -- Get the stats from the DOM
 on getStat(method, selector, instance, method2)
@@ -451,9 +453,9 @@ on getDataLoop(method, selector, instance, method2, errorMsg, delimiterSetting)
 	return the reverse of theList
 end getDataLoop
 
-###############################################
-## ROUTINES
-#
+##############################################
+-- ROUTINES
+##############################################
 
 -- Main Routine
 on mainRoutine()
@@ -581,6 +583,7 @@ end getDataForOneTag
 ##############################################
 -- Get Related Keywords
 ##############################################
+
 on getRelatedKeywords()
 	set currentKeyword to setSearchField(userKeyword()) as text
 	writeFile(currentKeyword & newLine, false) as text
@@ -618,6 +621,7 @@ end getRelatedKeywords
 ##############################################
 -- Get Data from User Input List
 ##############################################
+
 on getTagDataFromUserInputList()
 	set theList to {}
 	repeat
@@ -675,6 +679,7 @@ end getTagDataFromUserInputList
 ##############################################
 -- Get Data from File
 ##############################################
+
 on getTagDataFromFile()
 	set theList to makeKeywordList()
 	
@@ -723,9 +728,10 @@ on getTagDataFromFile()
 end getTagDataFromFile
 
 
-###############################################
-## CALLS
-#
+##############################################
+-- CALLS
+##############################################
+
 -- Initial User Prompt
 on initialPrompt()
 	set option1 to "Get tag data one word at a time"
