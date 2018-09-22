@@ -15,9 +15,6 @@ Having all the metrics allows you to make decisions on what keywords are the bes
 
 ## Dependencies ##
 * Mac OS 10.11+
-* [Google Chrome](https://www.google.com/chrome/)
-* [Google Docs](https://drive.google.com/drive/u/0/)
-* [Google Sheets](https://docs.google.com/spreadsheets/u/0/)
 * [Safari](https://support.apple.com/en_GB/downloads/safari)
 * [Etsy Rank Subscription](https://etsyrank.com/)
 
