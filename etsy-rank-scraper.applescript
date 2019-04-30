@@ -108,21 +108,7 @@ on writeDivider()
 end writeDivider
 
 
-###############################################
-## ROUTINES
-#
 
-###############################################
--- Main Routine
-on mainRoutine()
-	set currentKeyword to setSearchField(userKeyword())
-	clickSearchButton()
-	checkIfLoaded()
-	
-	writeFile(headers & newLine & currentKeyword & delim & getTagData() & newLine & " " & newLine & "Related Tags to " & "'" & currentKeyword & "'" & newLine & getRelatedTags() & newLine, false) as text
-	
-	userPrompt("Finished!")
-end mainRoutine
 
 
 ###############################################
@@ -388,6 +374,27 @@ on initialPrompt()
 		
 	end repeat
 end initialPrompt
+
+-- Read from File
+on readFromList()
+	set theList to paragraphs of (read POSIX file filePath)
+end readFromList
+
+###############################################
+## ROUTINES
+#
+
+###############################################
+-- Main Routine
+on mainRoutine()
+	set currentKeyword to setSearchField(userKeyword())
+	clickSearchButton()
+	checkIfLoaded()
+	
+	writeFile(headers & newLine & currentKeyword & delim & getTagData() & newLine & " " & newLine & "Related Tags to " & "'" & currentKeyword & "'" & newLine & getRelatedTags() & newLine, false) as text
+	
+	userPrompt("Finished!")
+end mainRoutine
 
 
 initialPrompt()
