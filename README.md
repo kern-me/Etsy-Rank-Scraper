@@ -1,8 +1,8 @@
 # README #
-"EtsyRank Keyword Scraper" is designed to automate the collection of Etsy keyword data. It does all the manual work of copying and pasting keyword data from EtsyRank.
+"Eranker" is designed to automate the collection of Etsy keyword data from the keyword research platform "Erank". It does all the manual work of copying and pasting keyword data.
 
 # Version #
-* Etsy Rank Keyword Scraper
+* Eranker
 * 2.1.0
 
 # Why Tho? #
@@ -20,7 +20,7 @@ Having all the metrics allows you to make decisions on what keywords are the bes
 
 ## Instructions (In progress) ##
 1. Open [Safari](https://support.apple.com/en_GB/downloads/safari) and [Login to your Etsy Rank account.](https://etsyrank.com/)
-2. Run (double click) the "Etsy Rank Scraper.app" file.
+2. Run (double click) the "Eranker.app" file.
 3. Follow the prompts.
 4. Step away from the computer and let it run! :)
 
